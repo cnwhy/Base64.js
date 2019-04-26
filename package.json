@@ -1,15 +1,17 @@
 {
-  "name": "base64.js",
-  "version": "1.0.0",
+  "name": "@cnwhy/base64",
+  "version": "0.1.0",
   "description": "Base64 library, lossless transcoding.",
   "main": "dist/Base64.umd.js",
   "module": "dist/Base64.es.js",
   "types": "dist/Base64.d.ts",
   "scripts": {
+    "clean": "rimraf dist/*",
+    "precompile": "npm run clean",
     "compile": "tsc --emitDeclarationOnly && rollup -c",
     "test": "ava test/index.js",
     "test-cov": "nyc npm test --fail-fast",
-    "prepublish": "npm run compile && npm run test"
+    "prepack": "npm run compile && npm run test-cov"
   },
   "keywords": [
     "base64",
@@ -17,7 +19,7 @@
     "atob",
     "btoa"
   ],
-  "files":[
+  "files": [
     "*.ts",
     "*.js",
     "*.json",
@@ -27,13 +29,12 @@
   "author": "cnwhy",
   "license": "MIT",
   "devDependencies": {
-    "@babel/preset-env": "^7.4.3",
-    "@babel/register": "^7.4.0",
     "ava": "^1.4.1",
-    "babel-register": "^6.26.0",
     "nyc": "^14.0.0",
+    "rimraf": "^2.6.3",
     "rollup": "^1.10.1",
     "rollup-plugin-typescript": "^1.0.1",
+    "ts-node": "^8.1.0",
     "tslib": "^1.9.3",
     "typescript": "^3.4.4"
   },
@@ -48,9 +49,7 @@
     "url": "https://github.com/cnwhy/Base64.js/issues"
   },
   "homepage": "https://github.com/cnwhy/Base64.js#readme",
-  "dependencies": {
-    "ts-node": "^8.1.0"
-  },
+  "dependencies": {},
   "ava": {
     "compileEnhancements": false,
     "extensions": [
