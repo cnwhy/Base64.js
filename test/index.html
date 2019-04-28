@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta http-equiv="X-UA-Compatible" content="ie=edge">
+	<title>Document</title>
+	<script src="../dist/Base64.umd.js"></script>
+</head>
+<body>
+	<pre><script>
+		var str = "火车头𐐡123";
+		document.writeln(Base64.encode(str));	
+		var arr = Base64.decode(Base64.encode(str));
+		var arr16 = [].slice.call(arr,0);
+		document.writeln(arr16);	
+		document.writeln(Base64.decode(Base64.encode(str)).toString());	
+	</script></pre>
+
+</body>
+</html>

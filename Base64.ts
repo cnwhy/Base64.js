@@ -1,11 +1,23 @@
-/*!
- * Base64.js
- * https://github.com/cnwhy/Base64.js#readme
- */
 const BASE64_TABLE = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'.split('');
 const BASE64_URL_TABLE = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_'.split('');
 const PAD = '=';
 const ERR_CODE = '\ufffd';
+// poliyfill
+const isArray =
+	Array.isArray ||
+	function(obj) {
+		Object.prototype.toString.call(obj) == '[object Array]';
+	};
+const hasArrayBuffer = typeof ArrayBuffer === 'function';
+const MyArrayBuffer = hasArrayBuffer ? ArrayBuffer : function() {};
+const myUint8arrayClass = hasArrayBuffer ? Uint8Array : Array;
+const getUint8Array = hasArrayBuffer
+	? function(arr: any) {
+			return new Uint8Array(arr);
+	  }
+	: function(arr: any) {
+			return typeof arr === 'number' ? new Array(arr) : arr;
+	  };
 
 function u2utf8(codePoint: number): number[] {
 	// 未暴露的方法, 内部调用无需判断;
@@ -31,10 +43,10 @@ function u2utf8(codePoint: number): number[] {
  * @param {string} str
  * @returns
  */
-function utf8Encode(str: string):Uint8Array {
+function utf8Encode(str: string): Uint8Array {
 	let utf8: number[] = [];
 	let codePoints: number[] = [];
-	for (var i = 0; i < str.length; i++) {
+	for (let i = 0; i < str.length; i++) {
 		let code = str.charCodeAt(i);
 		let cod1;
 		if (code < 0xd800 || code > 0xdfff) {
@@ -48,10 +60,15 @@ function utf8Encode(str: string):Uint8Array {
 			codePoints.push(code);
 		}
 	}
-	codePoints.forEach(v => {
+	// codePoints.forEach(v => {
+	// 	utf8.push.apply(utf8, u2utf8(v));
+	// });
+	for (let i = 0; i < codePoints.length; i++) {
+		let v = codePoints[i];
 		utf8.push.apply(utf8, u2utf8(v));
-	});
-	return new Uint8Array(utf8);
+	}
+
+	return getUint8Array(utf8);
 }
 
 /**
@@ -61,15 +78,15 @@ function utf8Encode(str: string):Uint8Array {
  * @returns {string}
  */
 function utf8Decode(buffer: ArrayBuffer | Uint8Array | number[]): string {
-	let u8: Uint8Array;
+	let u8: Uint8Array | number[];
 	let str = '';
 	let index = 0;
-	if (buffer instanceof Uint8Array) {
+	if (buffer instanceof myUint8arrayClass) {
 		// Uint8Array & Buffer
 		u8 = buffer;
-	} else if (buffer instanceof ArrayBuffer || Array.isArray(buffer)) {
+	} else if (buffer instanceof MyArrayBuffer || isArray(buffer)) {
 		// ArrayBuffer & number[]
-		u8 = new Uint8Array(buffer);
+		u8 = getUint8Array(buffer);
 	} else {
 		return String(buffer);
 	}
@@ -126,17 +143,17 @@ function utf8Decode(buffer: ArrayBuffer | Uint8Array | number[]): string {
 	return str;
 }
 
-function toStringUTF8(this: Uint8Array):string {
+function toStringUTF8(this: Uint8Array): string {
 	return utf8Decode(this);
 }
 
 function getEncode(table: string[], pad: string) {
 	return function(u8arr: ArrayBuffer | Uint8Array | number[] | string): string {
 		let _u8arr;
-		if (u8arr instanceof Uint8Array) {
+		if (u8arr instanceof myUint8arrayClass) {
 			_u8arr = u8arr;
-		} else if (u8arr instanceof ArrayBuffer || Array.isArray(u8arr)) {
-			_u8arr = new Uint8Array(u8arr);
+		} else if (u8arr instanceof MyArrayBuffer || isArray(u8arr)) {
+			_u8arr = getUint8Array(u8arr);
 		} else {
 			_u8arr = utf8Encode(u8arr.toString());
 		}
@@ -153,15 +170,22 @@ function getEncode(table: string[], pad: string) {
 			codes[index++] = ((a1 << 2) | (a2 >> 6)) & 0x3f;
 			codes[index++] = a2 & 0x3f;
 		}
-		return codes.reduce((d, code, i) => {
-			return (d += i > bitLength - 1 ? pad : table[code]);
-		}, '');
+		let base64 = '';
+		for (let i = 0; i < codes.length; i++) {
+			const code = codes[i];
+			base64 += i > bitLength - 1 ? pad : table[code];
+		}
+		return base64;
+		// return codes.reduce((d, code, i) => {
+		// 	return (d += i > bitLength - 1 ? pad : table[code]);
+		// }, '');
 	};
 }
 
 function getDecode(table: string[], pad: string) {
+	const tableStr = table.join('');
 	const getV = function(char: string): number {
-		let index = table.indexOf(char);
+		let index = tableStr.indexOf(char);
 		if (index == -1) throw new TypeError(`"${char}" not base64 char`);
 		return index;
 	};
@@ -173,14 +197,14 @@ function getDecode(table: string[], pad: string) {
 		}
 		return pads;
 	};
-	const padreg = new RegExp(`${pad}*$`);
-	return function(base64Str: string): Uint8Array {
-		base64Str = base64Str.trim();
+	// const padreg = new RegExp(`${pad}*$`);
+	return function(base64Str: string): Uint8Array | number[] {
+		// base64Str = base64Str.trim();
 		let length = base64Str.length;
 		let indexMax = length - getPads(base64Str);
 		let mc4 = indexMax % 4;
 		if (mc4 === 1) throw new TypeError('The parameter is not a base64 string!');
-		let buffer = new Uint8Array(Math.floor((indexMax * 6) / 8));
+		let buffer = new myUint8arrayClass(Math.floor((indexMax * 6) / 8));
 		let index = 0;
 		let i = 0;
 		const next = function() {
@@ -188,15 +212,15 @@ function getDecode(table: string[], pad: string) {
 		};
 		for (let loopLength = indexMax - mc4; i < loopLength; ) {
 			let [c0, c1, c2, c3] = [next(), next(), next(), next()];
-			buffer[index++] = (c0 << 2) | (c1 >> 4);
-			buffer[index++] = (c1 << 4) | (c2 >> 2);
-			buffer[index++] = (c2 << 6) | c3;
+			buffer[index++] = ((c0 << 2) | (c1 >> 4)) & 0xff;
+			buffer[index++] = ((c1 << 4) | (c2 >> 2)) & 0xff;
+			buffer[index++] = ((c2 << 6) | c3) & 0xff;
 		}
 		if (mc4) {
-			let c0,c1;
-			buffer[index++] = ((c0 = next()) << 2) | ((c1 = next()) >> 4);
+			let c1;
+			buffer[index++] = ((next() << 2) | ((c1 = next()) >> 4)) & 0xff;
 			if (mc4 === 3) {
-				buffer[index++] = (c1 << 4) | ((next()) >> 2);
+				buffer[index++] = ((c1 << 4) | (next() >> 2)) & 0xff;
 			}
 		}
 		// 复写toString以UTF8编码输出;
@@ -210,5 +234,5 @@ const decode = getDecode(BASE64_TABLE, PAD);
 
 const encodeURL = getEncode(BASE64_URL_TABLE, PAD);
 const decodeURL = getDecode(BASE64_URL_TABLE, PAD);
-
-export { decode, encode, encodeURL, decodeURL, utf8Encode, utf8Decode };
+// const __esModule = true;
+export { decode, encode, encodeURL, decodeURL, utf8Encode, utf8Decode};

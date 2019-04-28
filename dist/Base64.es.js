@@ -1,14 +1,28 @@
 /*!
- * Base64.js
- * https://github.com/cnwhy/Base64.js#readme
+ * @cnwhy/base64  v0.1.1
+ * Homepage https://github.com/cnwhy/Base64.js#readme
+ * License MIT
  */
+
 const BASE64_TABLE = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'.split('');
 const BASE64_URL_TABLE = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_'.split('');
 const PAD = '=';
 const ERR_CODE = '\ufffd';
+const isArray = Array.isArray ||
+    function (obj) {
+        Object.prototype.toString.call(obj) == '[object Array]';
+    };
+const hasArrayBuffer = typeof ArrayBuffer === 'function';
+const MyArrayBuffer = hasArrayBuffer ? ArrayBuffer : function () { };
+const myUint8arrayClass = hasArrayBuffer ? Uint8Array : Array;
+const getUint8Array = hasArrayBuffer
+    ? function (arr) {
+        return new Uint8Array(arr);
+    }
+    : function (arr) {
+        return typeof arr === 'number' ? new Array(arr) : arr;
+    };
 function u2utf8(codePoint) {
-    // 未暴露的方法, 内部调用无需判断;
-    // if (codePoint < 0 || codePoint > 0x7fffffff) throw new SyntaxError('Undefined Unicode code-point');
     if (codePoint < 0x80)
         return [codePoint];
     let n = 11;
@@ -25,53 +39,38 @@ function u2utf8(codePoint) {
     }
     return u8;
 }
-/**
- * 字符串utf8编码
- *
- * @param {string} str
- * @returns
- */
 function utf8Encode(str) {
     let utf8 = [];
     let codePoints = [];
-    for (var i = 0; i < str.length; i++) {
+    for (let i = 0; i < str.length; i++) {
         let code = str.charCodeAt(i);
         let cod1;
         if (code < 0xd800 || code > 0xdfff) {
             codePoints.push(code);
         }
         else if (code < 0xdc00 && (cod1 = str.charCodeAt(i + 1)) >= 0xdc00 && cod1 < 0xe000) {
-            //四字节字符处理
             i++;
             codePoints.push(0x10000 + (((code & 0x3ff) << 10) | (cod1 & 0x3ff)));
         }
         else {
-            //不自行处理 不正常编码
             codePoints.push(code);
         }
     }
-    codePoints.forEach(v => {
+    for (let i = 0; i < codePoints.length; i++) {
+        let v = codePoints[i];
         utf8.push.apply(utf8, u2utf8(v));
-    });
-    return new Uint8Array(utf8);
+    }
+    return getUint8Array(utf8);
 }
-/**
- * buffer以utf8转字符串
- *
- * @param {(ArrayBuffer | Uint8Array | number[])} buffer
- * @returns {string}
- */
 function utf8Decode(buffer) {
     let u8;
     let str = '';
     let index = 0;
-    if (buffer instanceof Uint8Array) {
-        // Uint8Array & Buffer
+    if (buffer instanceof myUint8arrayClass) {
         u8 = buffer;
     }
-    else if (buffer instanceof ArrayBuffer || Array.isArray(buffer)) {
-        // ArrayBuffer & number[]
-        u8 = new Uint8Array(buffer);
+    else if (buffer instanceof MyArrayBuffer || isArray(buffer)) {
+        u8 = getUint8Array(buffer);
     }
     else {
         return String(buffer);
@@ -85,8 +84,6 @@ function utf8Decode(buffer) {
                 return _i;
             }
             else if (c0 < 0xc2 || c0 > 0xfd) {
-                //  多字节 `u+0080` 转第一位最小值是 1100 0010 , 0000 0000
-                //  多字节 第一字节 最大位是 `1111 1101`
                 throw 'code err';
             }
             else {
@@ -96,7 +93,6 @@ function utf8Decode(buffer) {
                 let code = 0;
                 while (c0 >= (mk | (Math.pow(2, w)))) {
                     let cn = u8[_i++];
-                    // if(cn < 0x80 || cn > 0xfb) throw 'code err';
                     if ((cn & 0xc0) ^ 0x80)
                         throw 'code err';
                     cs.push(cn);
@@ -121,9 +117,6 @@ function utf8Decode(buffer) {
             }
         }
         catch (e) {
-            // str += String.fromCharCode(c0);
-            // 不正常的UTF8字节数据, 替换为 �
-            // console.log(e);
             str += ERR_CODE;
             return i + 1;
         }
@@ -139,11 +132,11 @@ function toStringUTF8() {
 function getEncode(table, pad) {
     return function (u8arr) {
         let _u8arr;
-        if (u8arr instanceof Uint8Array) {
+        if (u8arr instanceof myUint8arrayClass) {
             _u8arr = u8arr;
         }
-        else if (u8arr instanceof ArrayBuffer || Array.isArray(u8arr)) {
-            _u8arr = new Uint8Array(u8arr);
+        else if (u8arr instanceof MyArrayBuffer || isArray(u8arr)) {
+            _u8arr = getUint8Array(u8arr);
         }
         else {
             _u8arr = utf8Encode(u8arr.toString());
@@ -161,14 +154,18 @@ function getEncode(table, pad) {
             codes[index++] = ((a1 << 2) | (a2 >> 6)) & 0x3f;
             codes[index++] = a2 & 0x3f;
         }
-        return codes.reduce((d, code, i) => {
-            return (d += i > bitLength - 1 ? pad : table[code]);
-        }, '');
+        let base64 = '';
+        for (let i = 0; i < codes.length; i++) {
+            const code = codes[i];
+            base64 += i > bitLength - 1 ? pad : table[code];
+        }
+        return base64;
     };
 }
 function getDecode(table, pad) {
+    const tableStr = table.join('');
     const getV = function (char) {
-        let index = table.indexOf(char);
+        let index = tableStr.indexOf(char);
         if (index == -1)
             throw new TypeError(`"${char}" not base64 char`);
         return index;
@@ -182,13 +179,12 @@ function getDecode(table, pad) {
         return pads;
     };
     return function (base64Str) {
-        base64Str = base64Str.trim();
         let length = base64Str.length;
         let indexMax = length - getPads(base64Str);
         let mc4 = indexMax % 4;
         if (mc4 === 1)
             throw new TypeError('The parameter is not a base64 string!');
-        let buffer = new Uint8Array(Math.floor((indexMax * 6) / 8));
+        let buffer = new myUint8arrayClass(Math.floor((indexMax * 6) / 8));
         let index = 0;
         let i = 0;
         const next = function () {
@@ -196,18 +192,17 @@ function getDecode(table, pad) {
         };
         for (let loopLength = indexMax - mc4; i < loopLength;) {
             let [c0, c1, c2, c3] = [next(), next(), next(), next()];
-            buffer[index++] = (c0 << 2) | (c1 >> 4);
-            buffer[index++] = (c1 << 4) | (c2 >> 2);
-            buffer[index++] = (c2 << 6) | c3;
+            buffer[index++] = ((c0 << 2) | (c1 >> 4)) & 0xff;
+            buffer[index++] = ((c1 << 4) | (c2 >> 2)) & 0xff;
+            buffer[index++] = ((c2 << 6) | c3) & 0xff;
         }
         if (mc4) {
-            let c0, c1;
-            buffer[index++] = ((c0 = next()) << 2) | ((c1 = next()) >> 4);
+            let c1;
+            buffer[index++] = ((next() << 2) | ((c1 = next()) >> 4)) & 0xff;
             if (mc4 === 3) {
-                buffer[index++] = (c1 << 4) | ((next()) >> 2);
+                buffer[index++] = ((c1 << 4) | (next() >> 2)) & 0xff;
             }
         }
-        // 复写toString以UTF8编码输出;
         buffer.toString = toStringUTF8;
         return buffer;
     };

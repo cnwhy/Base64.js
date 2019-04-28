@@ -16,10 +16,6 @@
 
 ### 适用场景
 1. 二进制数据 与 Base64 互转
-
-### 兼容
-IE10+ (ES2015)
-
 ### Demo
 ```js
 import Base64 from 'base64.js';
