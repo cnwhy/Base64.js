@@ -1,6 +1,6 @@
 {
   "name": "@cnwhy/base64",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Base64 library, lossless transcoding.",
   "main": "dist/Base64.umd.js",
   "module": "dist/Base64.es.js",

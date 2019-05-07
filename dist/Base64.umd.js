@@ -5,7 +5,7 @@
 }(this, function (exports) { 'use strict';
 
     /*!
-     * @cnwhy/base64  v0.1.2
+     * @cnwhy/base64  v0.1.3
      * Homepage https://github.com/cnwhy/Base64.js#readme
      * License MIT
      */
@@ -249,11 +249,16 @@
     var decode = getDecode(BASE64_TABLE, PAD);
     var encodeURL = getEncode(BASE64_URL_TABLE, PAD);
     var decodeURL = getDecode(BASE64_URL_TABLE, PAD);
+    var lib = {
+      getEncode: getEncode,
+      getDecode: getDecode
+    };
 
     exports.decode = decode;
     exports.decodeURL = decodeURL;
     exports.encode = encode;
     exports.encodeURL = encodeURL;
+    exports.lib = lib;
     exports.utf8Decode = utf8Decode;
     exports.utf8Encode = utf8Encode;
 

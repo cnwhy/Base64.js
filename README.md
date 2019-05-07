@@ -74,5 +74,10 @@ Base64 = {
 	// UTF8 编码 解码
 	utf8Encode(str:string):Uint8Array;
 	utf8Decode(utf8arr:Uint8Array):string;
+
+	lib:{
+		getEncode(table: string[], pad: string): encode;
+		getDecode(table: string[], pad: string): decode;
+	}
 }
 ```

@@ -1,5 +1,5 @@
 /*!
- * @cnwhy/base64  v0.1.2
+ * @cnwhy/base64  v0.1.3
  * Homepage https://github.com/cnwhy/Base64.js#readme
  * License MIT
  */
@@ -211,5 +211,9 @@ const encode = getEncode(BASE64_TABLE, PAD);
 const decode = getDecode(BASE64_TABLE, PAD);
 const encodeURL = getEncode(BASE64_URL_TABLE, PAD);
 const decodeURL = getDecode(BASE64_URL_TABLE, PAD);
+const lib = {
+    getEncode,
+    getDecode
+};
 
-export { decode, decodeURL, encode, encodeURL, utf8Decode, utf8Encode };
+export { decode, decodeURL, encode, encodeURL, lib, utf8Decode, utf8Encode };
