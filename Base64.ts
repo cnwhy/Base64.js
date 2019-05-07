@@ -234,5 +234,11 @@ const decode = getDecode(BASE64_TABLE, PAD);
 
 const encodeURL = getEncode(BASE64_URL_TABLE, PAD);
 const decodeURL = getDecode(BASE64_URL_TABLE, PAD);
+
+const lib = {
+	getEncode,
+	getDecode
+}
+
 // const __esModule = true;
-export { decode, encode, encodeURL, decodeURL, utf8Encode, utf8Decode};
+export {lib, decode, encode, encodeURL, decodeURL, utf8Encode, utf8Decode};
