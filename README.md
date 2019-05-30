@@ -8,15 +8,16 @@
     var s = '\ud800';
     var b64 = Buffer.from(s).toString('base64');
     var _s = Buffer.from(b64, 'base64').toString();
-    e;
+    console.log(s == _s); //false
     ```
 
 3. `Base64`编/解码本该与字符串无关, 但几乎所有 Base64 的`decode`方法都输出字符串,限制了使用场景.
-
 ### 本库方案
 
 对于字符串的转换用`UTF-8`编码, 但无视无效符(解码按同一规则), 保证 js 的字符([UCS-2](https://zh.wikipedia.org/wiki/UTF-16#UTF-16%E8%88%87UCS-2%E7%9A%84%E9%97%9C%E4%BF%82))串可以无损转换.
 `decode()` 单纯将`Base64`解析`Byte[]`; 但重写返回字节数组的`toString()`方法, 以`UTF-8`编码解析为字符串.
+
+本库还暴露 `createEncode`, `createDecode` 两个API, 支持生成非标准的 Base64 方案, 可自定义(table, pad, encoding);
 
 ### 适用场景
 
@@ -64,20 +65,23 @@ false
 
 ```ts
 Base64 = {
+	BASE64_TABLE: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+	BASE64_URL_TABLE: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+	PAD: "=";
+	// UTF8 编码 解码; 可做为 strEncode strDecode 参数;
+	utf8Encode(str:string):Uint8Array|number[];
+	utf8Decode(utf8arr:Uint8Array|number[]):string;
+
+	//Base64 编码 解码
 	encode(input:string|ArrayBuffer|Uint8Array|number[]):string;
 	decode(input:string|ArrayBuffer|Uint8Array|number[]):Uint8Array;
 
-	//适用于URL的Base64 ( "_" "-" 替换 "/" "+");
+	//适用于URL的Base64 编码 解码( "_" "-" 替换 "/" "+");
 	encodeURL(input:string|ArrayBuffer|Uint8Array|number[]):string;
 	decodeURL(input:string|ArrayBuffer|Uint8Array|number[]):Uint8Array;
 
-	// UTF8 编码 解码
-	utf8Encode(str:string):Uint8Array;
-	utf8Decode(utf8arr:Uint8Array):string;
-
-	lib:{
-		getEncode(table: string[], pad: string): encode;
-		getDecode(table: string[], pad: string): decode;
-	}
+	//创建自定义Base64 encode , decode 函数
+	function createEncode(table: string[] | string, pad: string, strEncode?: Function):encode;
+	function createDecode(table: string[] | string, pad: string, strDecode?: Function):decode;
 }
 ```

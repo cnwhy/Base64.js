@@ -1,6 +1,9 @@
 // @ts-nocheck
 import test from 'ava';
-import * as Base64 from '../Base64.ts';
+import * as Base64 from '../src/Base64.ts';
+import * as GBK from 'gbk.js';
+import { split } from 'ts-node';
+
 //正常字符
 let strs = [
 	['sfsf2342342*Y*&^&()*)', '普通字符串'],
@@ -93,23 +96,22 @@ test.serial(`Base64.utf8Decode 参数测试`, t => {
 	let ab = bf.buffer.slice(bf.byteOffset, bf.byteOffset + bf.byteLength);
 	let arr = Array.from(bf);
 	let u8 = new Uint8Array(arr);
-	t.is(Base64.utf8Decode(bf),str);
-	t.is(Base64.utf8Decode(ab),str);
-	t.is(Base64.utf8Decode(arr),str);
-	t.is(Base64.utf8Decode(u8),str);
+	t.is(Base64.utf8Decode(bf), str);
+	t.is(Base64.utf8Decode(ab), str);
+	t.is(Base64.utf8Decode(arr), str);
+	t.is(Base64.utf8Decode(u8), str);
 });
 
 test.serial(`Base64.utf8Decode utf8数据错误`, t => {
 	t.plan(4);
 	let arr1 = [0xc1];
 	let arr2 = [0xc3];
-	let arr3 = [0xc3,0x7f,0xffff,0x80,0x80,0x80,0x80,0x80,0x80];
-	t.is(Base64.utf8Decode(arr1),'\ufffd');
-	t.is(Base64.utf8Decode(arr2),'\ufffd');
-	t.is(Base64.utf8Decode(arr3),'\ufffd\u007f\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd');
-	t.is(Base64.utf8Decode({toString:()=>'123'}),'123');
+	let arr3 = [0xc3, 0x7f, 0xffff, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80];
+	t.is(Base64.utf8Decode(arr1), '\ufffd');
+	t.is(Base64.utf8Decode(arr2), '\ufffd');
+	t.is(Base64.utf8Decode(arr3), '\ufffd\u007f\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd');
+	t.is(Base64.utf8Decode({ toString: () => '123' }), '123');
 });
-
 
 // test.serial(`2进制数据编码/解码`, t => {
 // 	var bf = new Buffer(100);
@@ -129,14 +131,14 @@ test.serial(`2进制数据编码/解码`, t => {
 test.serial(`乱码字符串编码/解码`, t => {
 	let loop = 10000;
 	t.plan(loop);
-	function getStr(){
-		let str = ''
+	function getStr() {
+		let str = '';
 		for (let i = 0; i < 100; i++) {
 			str += String.fromCodePoint((Math.random() * 0x10ffff) >> 0);
 		}
 		return str;
 	}
-	for(let i =0;i<loop; i++){
+	for (let i = 0; i < loop; i++) {
 		let str = getStr();
 		let str1 = Base64.decode(Base64.encode(str)).toString();
 		t.is(str, str1);
@@ -144,6 +146,59 @@ test.serial(`乱码字符串编码/解码`, t => {
 	// t.deepEqual(Array.from(str),Array.from(bf1));
 });
 
+test.serial(`自定义 参数检查`, t => {
+	t.plan(8);
+	t.throws(() => {
+		Base64.createEncode('123', null, GBK.encode);
+	});
+	t.throws(() => {
+		Base64.createEncode({}, null, GBK.encode);
+	});
+	t.throws(() => {
+		Base64.createEncode(Base64.BASE64_TABLE.replace('0', '1'), null, GBK.encode);
+	});
+	t.throws(() => {
+		Base64.createEncode(Base64.BASE64_TABLE, '==', GBK.encode);
+	});
+	t.throws(() => {
+		Base64.createEncode(Base64.BASE64_TABLE, 'a', GBK.encode);
+	});
+	let table = Base64.BASE64_TABLE.split('');
+	table[0] = table[0] + table[0];
+	t.throws(() => {
+		Base64.createEncode(table, 'a', GBK.encode);
+	});
+
+	let myBase64Encode = Base64.createEncode();
+	let myBase64Decode = Base64.createDecode();
+	let arr = [1, 2, 3];
+	let k = myBase64Encode([1, 2, 3]);
+	let _arr = myBase64Decode(k);
+	t.deepEqual(arr,Array.from(_arr));
+	t.throws(() => {
+		myBase64Encode('123');
+	});
+});
+
+test.serial(`GBK 编码,解码`, t => {
+	const Base64EncodeGBK = Base64.createEncode(null, null, GBK.encode);
+	const Base64DecodeGBK = Base64.createDecode(null, null, GBK.decode);
+	const str = 'GBK 编码,解码';
+	t.is(str, Base64DecodeGBK(Base64EncodeGBK(str)).toString());
+});
+
+test.serial(`UTF16 编码,解码`, t => {
+	const Base64EncodeU16 = Base64.createEncode(null, null, function(str) {
+		let cods = str.split('').map(s => s.charCodeAt(0));
+		return new Uint8Array(new Uint16Array(cods).buffer);
+	});
+	const Base64DecodeU16 = Base64.createDecode(null, null, function(arr) {
+		let u16 = Array.from(new Uint16Array(arr.buffer));
+		return u16.map(c => String.fromCharCode(c)).join('');
+	});
+	const str = 'UTF16 编码,解码';
+	t.is(str, Base64DecodeU16(Base64EncodeU16(str)).toString());
+});
 // test.serial(`Base64.encode 非正常字符串`, t => {
 // 	t.plan(2);
 // 	let str = "a\ud801\u{10046}cd"

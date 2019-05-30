@@ -12,7 +12,7 @@ let banner =`/*!
 
 export default [
 	{
-		input: 'Base64.ts',
+		input: './src/Base64.ts',
 		plugins: [
 			typescript({
 				target: 'ES2015',

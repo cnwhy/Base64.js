@@ -5,15 +5,10 @@
 }(this, function (exports) { 'use strict';
 
     /*!
-     * @cnwhy/base64  v0.1.3
+     * @cnwhy/base64  v0.2.0
      * Homepage https://github.com/cnwhy/Base64.js#readme
      * License MIT
      */
-    var BASE64_TABLE = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'.split('');
-    var BASE64_URL_TABLE = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_'.split('');
-    var PAD = '=';
-    var ERR_CODE = "\uFFFD";
-
     var isArray = Array.isArray || function (obj) {
       Object.prototype.toString.call(obj) == '[object Array]';
     };
@@ -26,6 +21,7 @@
     } : function (arr) {
       return typeof arr === 'number' ? new Array(arr) : arr;
     };
+    var ERR_CODE = "\uFFFD";
 
     function u2utf8(codePoint) {
       if (codePoint < 0x80) return [codePoint];
@@ -145,11 +141,63 @@
       return str;
     }
 
-    function toStringUTF8() {
-      return utf8Decode(this);
+    var BASE64_TABLE = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+    var PAD = '=';
+
+    function getPad(pad, table) {
+      var _pad = String(pad || PAD);
+
+      if (_pad.length !== 1) {
+        throw new TypeError('The apd must be char');
+      }
+
+      if (~table.join('').indexOf(_pad)) {
+        throw new TypeError('The table as _pad');
+      }
+
+      return _pad;
     }
 
-    function getEncode(table, pad) {
+    function getTable(table) {
+      var _table;
+
+      table = table || BASE64_TABLE;
+
+      if (typeof table == 'string') {
+        _table = table.split('');
+      } else if (isArray(table)) {
+        _table = Array.prototype.slice.call(table, 0);
+      } else {
+        throw new TypeError("The \"table\" must be Array or a String.");
+      }
+
+      checkTable(_table);
+      return _table;
+    }
+
+    function checkTable(table) {
+      if (table.length < 64) {
+        throw new TypeError('The length of "table" is not 64!');
+      }
+
+      for (var i = 0; i < 64; i++) {
+        var _char = table[i];
+
+        if (_char.length != 1) {
+          throw new TypeError("table item \"".concat(_char, "\" must be a single character"));
+        }
+
+        for (var k = i + 1; k < 64; k++) {
+          if (_char == table[k]) {
+            throw new TypeError("Code table character \"".concat(_char, "\" is repeated"));
+          }
+        }
+      }
+    }
+
+    function createEncode(table, pad, strEncode) {
+      var TABLE = getTable(table);
+      var PAD = getPad(pad, TABLE);
       return function (u8arr) {
         var _u8arr;
 
@@ -157,8 +205,10 @@
           _u8arr = u8arr;
         } else if (u8arr instanceof MyArrayBuffer || isArray(u8arr)) {
           _u8arr = getUint8Array(u8arr);
+        } else if (typeof strEncode == 'function') {
+          _u8arr = strEncode(String(u8arr));
         } else {
-          _u8arr = utf8Encode(u8arr.toString());
+          throw TypeError('"strEncode" is not function');
         }
 
         var bitLength = Math.ceil(_u8arr.length * 8 / 6);
@@ -180,19 +230,21 @@
 
         for (var _i3 = 0; _i3 < codes.length; _i3++) {
           var code = codes[_i3];
-          base64 += _i3 > bitLength - 1 ? pad : table[code];
+          base64 += _i3 > bitLength - 1 ? PAD : TABLE[code];
         }
 
         return base64;
       };
     }
 
-    function getDecode(table, pad) {
-      var tableStr = table.join('');
+    function createDecode(table, pad, strDecode) {
+      var TABLE = getTable(table);
+      var PAD = getPad(pad, TABLE);
+      var TABLE_JOIN = TABLE.join('');
 
-      var getV = function getV(_char) {
-        var index = tableStr.indexOf(_char);
-        if (index == -1) throw new TypeError("\"".concat(_char, "\" not base64 char"));
+      var getV = function getV(_char2) {
+        var index = TABLE_JOIN.indexOf(_char2);
+        if (index == -1) throw new TypeError("\"".concat(_char2, "\" not base64 char"));
         return index;
       };
 
@@ -200,13 +252,16 @@
         var index = base64Str.length;
         var pads = 0;
 
-        while (index-- > 0 && base64Str.charAt(index) === pad) {
+        while (index-- > 0 && base64Str.charAt(index) === PAD) {
           pads++;
         }
 
         return pads;
       };
 
+      var toString = typeof strDecode == 'function' ? function () {
+        return strDecode(this);
+      } : null;
       return function (base64Str) {
         var length = base64Str.length;
         var indexMax = length - getPads(base64Str);
@@ -240,25 +295,26 @@
           }
         }
 
-        buffer.toString = toStringUTF8;
+        toString && (buffer.toString = toString);
         return buffer;
       };
     }
 
-    var encode = getEncode(BASE64_TABLE, PAD);
-    var decode = getDecode(BASE64_TABLE, PAD);
-    var encodeURL = getEncode(BASE64_URL_TABLE, PAD);
-    var decodeURL = getDecode(BASE64_URL_TABLE, PAD);
-    var lib = {
-      getEncode: getEncode,
-      getDecode: getDecode
-    };
+    var BASE64_URL_TABLE = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
+    var encode = createEncode(BASE64_TABLE, PAD, utf8Encode);
+    var decode = createDecode(BASE64_TABLE, PAD, utf8Decode);
+    var encodeURL = createEncode(BASE64_URL_TABLE, PAD, utf8Encode);
+    var decodeURL = createDecode(BASE64_URL_TABLE, PAD, utf8Decode);
 
+    exports.BASE64_TABLE = BASE64_TABLE;
+    exports.BASE64_URL_TABLE = BASE64_URL_TABLE;
+    exports.PAD = PAD;
+    exports.createDecode = createDecode;
+    exports.createEncode = createEncode;
     exports.decode = decode;
     exports.decodeURL = decodeURL;
     exports.encode = encode;
     exports.encodeURL = encodeURL;
-    exports.lib = lib;
     exports.utf8Decode = utf8Decode;
     exports.utf8Encode = utf8Encode;
 
