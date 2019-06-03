@@ -2,12 +2,12 @@ import { isArray, MyArrayBuffer, myUint8arrayClass, getUint8Array } from './poli
 const BASE64_TABLE = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 const PAD = '=';
 
-function getPad(pad: string, table: any[]) {
+function getPad(pad: string | undefined, table: any[]) {
 	let _pad = String(pad || PAD);
 	if (_pad.length !== 1) {
 		throw new TypeError('The apd must be char');
 	}
-	if (~table.join('').indexOf(_pad)){
+	if (~table.join('').indexOf(_pad)) {
 		throw new TypeError('The table as _pad');
 	}
 	return _pad;
@@ -47,14 +47,31 @@ function checkTable(table: string[]) {
 /**
  * 创建Base64编码函数
  *
- * @param {(string[] | string)} Base64 的编码表
- * @param {string} PAD
- * @param {Function} strEncode
+ * @param {Function} strEncode // 字符串编函数
  * @returns {(input: any) => string}
  */
-function createEncode(table: string[] | string, pad: string, strEncode?: Function): (input: any) => string {
+function createEncode(strEncode: Function): (input: any) => string;
+/**
+ * 创建Base64编码函数
+ *
+ * @param {(string[] | string)} Base64 的编码表
+ * @param {string} PAD //填充符
+ * @param {Function} strEncode // 字符串编函数, 不设置则不支持编码字符串
+ * @returns {(input: any) => string}
+ */
+function createEncode(table?: string[] | string, pad?: string, strEncode?: Function): (input: any) => string;
+function createEncode(
+	table?: string[] | string | Function,
+	pad?: string,
+	strEncode?: Function
+): (input: any) => string {
+	if (typeof table == 'function') {
+		strEncode = table;
+		table = undefined;
+		pad = undefined;
+	}
 	const TABLE = getTable(table);
-	const PAD = getPad(pad,TABLE);
+	const PAD = getPad(pad, TABLE);
 	return function(u8arr: ArrayBuffer | Uint8Array | number[] | string): string {
 		let _u8arr;
 		if (u8arr instanceof myUint8arrayClass) {
@@ -95,15 +112,44 @@ function createEncode(table: string[] | string, pad: string, strEncode?: Functio
 /**
  * 创建Base64解码函数
  *
- * @param {(string[] | string)} table
- * @param {string} pad
- * @param {Function} [strDecode]
- * @returns
+ * @param {Function} strDecode
+ * @returns {((base64str: string) => Uint8Array | number[])}
  */
-function createDecode(table: string[] | string, pad: string, strDecode?: Function) {
+function createDecode(strDecode: Function): (base64str: string) => Uint8Array | number[];
+/**
+ * 创建Base64解码函数
+ *
+ * @param {(string[] | string)} [table]
+ * @param {string} [pad]
+ * @param {Function} [strDecode]
+ * @returns {((base64str: string) => Uint8Array | number[])}
+ */
+function createDecode(
+	table?: string[] | string,
+	pad?: string,
+	strDecode?: Function
+): (base64str: string) => Uint8Array | number[];
+function createDecode(
+	table?: string[] | string | Function,
+	pad?: string,
+	strDecode?: Function
+): (base64str: string) => Uint8Array | number[] {
+	if (typeof table == 'function') {
+		strDecode = table;
+		table = undefined;
+		pad = undefined;
+	}
 	const TABLE = getTable(table);
-	const PAD = getPad(pad,TABLE);
+	const PAD = getPad(pad, TABLE);
 	const TABLE_JOIN = TABLE.join('');
+	let _strDecode: Function,
+		toString =
+			typeof strDecode == 'function'
+				? ((_strDecode = strDecode),
+				  function(this: Uint8Array): string {
+						return _strDecode(this);
+				  })
+				: null;
 	const getV = function(char: string): number {
 		let index = TABLE_JOIN.indexOf(char);
 		if (index == -1) throw new TypeError(`"${char}" not base64 char`);
@@ -117,12 +163,7 @@ function createDecode(table: string[] | string, pad: string, strDecode?: Functio
 		}
 		return pads;
 	};
-	const toString =
-		typeof strDecode == 'function'
-			? function(this: Uint8Array): string {
-					return strDecode(this);
-			  }
-			: null;
+
 	// const padreg = new RegExp(`${pad}*$`);
 	return function(base64Str: string): Uint8Array | number[] {
 		// base64Str = base64Str.trim();

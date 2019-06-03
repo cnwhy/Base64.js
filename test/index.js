@@ -181,18 +181,18 @@ test.serial(`自定义 参数检查`, t => {
 });
 
 test.serial(`GBK 编码,解码`, t => {
-	const Base64EncodeGBK = Base64.createEncode(null, null, GBK.encode);
-	const Base64DecodeGBK = Base64.createDecode(null, null, GBK.decode);
+	const Base64EncodeGBK = Base64.createEncode(GBK.encode);
+	const Base64DecodeGBK = Base64.createDecode(GBK.decode);
 	const str = 'GBK 编码,解码';
 	t.is(str, Base64DecodeGBK(Base64EncodeGBK(str)).toString());
 });
 
 test.serial(`UTF16 编码,解码`, t => {
-	const Base64EncodeU16 = Base64.createEncode(null, null, function(str) {
+	const Base64EncodeU16 = Base64.createEncode(function(str) {
 		let cods = str.split('').map(s => s.charCodeAt(0));
 		return new Uint8Array(new Uint16Array(cods).buffer);
 	});
-	const Base64DecodeU16 = Base64.createDecode(null, null, function(arr) {
+	const Base64DecodeU16 = Base64.createDecode(function(arr) {
 		let u16 = Array.from(new Uint16Array(arr.buffer));
 		return u16.map(c => String.fromCharCode(c)).join('');
 	});
