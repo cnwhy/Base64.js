@@ -40,7 +40,7 @@ var encodes = [
 	['UTF16', encode_UTF16, decode_UTF16],
 	['GBK', encode_GBK, decode_GBK]
 ];
-var thestr = 'hello world! 我认为javascript才是世界上最好的语言.';
+var thestr = 'hello world! \u{10121} 我认为javascript才是世界上最好的语言.';
 encodes.forEach(([name, encode, decode]) => {
 	var b64 = encode(thestr);
 	console.log(name + ':\n' + b64 + ':\n' + decode(b64).toString());
