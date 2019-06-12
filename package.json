@@ -1,6 +1,6 @@
 {
   "name": "@cnwhy/base64",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Base64 library, lossless transcoding.",
   "main": "dist/Base64.umd.js",
   "module": "dist/Base64.es.js",
@@ -25,8 +25,7 @@
     "*.json",
     "src",
     "lib",
-    "dist",
-    "test"
+    "dist"
   ],
   "author": "cnwhy",
   "license": "MIT",
@@ -40,7 +39,7 @@
     "rollup-plugin-babel": "^4.3.2",
     "rollup-plugin-typescript": "^1.0.1",
     "ts-node": "^8.1.0",
-    "tslib": "^1.9.3",
+    "tslib": "^1.10.0",
     "typescript": "^3.4.4"
   },
   "directories": {
@@ -54,7 +53,6 @@
     "url": "https://github.com/cnwhy/Base64.js/issues"
   },
   "homepage": "https://github.com/cnwhy/Base64.js#readme",
-  "dependencies": {},
   "ava": {
     "compileEnhancements": false,
     "extensions": [

@@ -45,3 +45,29 @@ encodes.forEach(([name, encode, decode]) => {
 	var b64 = encode(thestr);
 	console.log(name + ':\n' + b64 + ':\n' + decode(b64).toString());
 });
+
+console.log('== DIY ==');
+const BASE64_TABLE = 'xQh}s7*y~A|nkj4Bf%z1R,P+)mMS{(&EWCKegp6r!OX</LuY-l9^ZJ#cTU[vHda$';
+const PAD = '.';
+const b64Encode = Base64.createEncode(BASE64_TABLE,PAD,Base64.utf8Encode);
+const b64Decode = Base64.createDecode(BASE64_TABLE,PAD,Base64.utf8Decode);
+var os = '中国\u{10121}美国';
+var os_l = os.substr(0,4);
+var os_r = os.substr(4);
+var os_b64 = b64Encode(os);
+var os_l_b64 = b64Encode(os_l);
+var os_r_b64 = b64Encode(os_r);
+console.log(os)
+console.log(os_b64)
+console.log(os_l_b64)
+console.log(os_r_b64)
+console.log(b64Decode(os_b64).toString());
+console.log(b64Decode(os_l_b64) + b64Decode(os_r_b64) == os);
+
+let bytes = new Uint8Array([1,2,3,4,5]);
+let u16arr = new Uint16Array([1,2,3,4,5]);
+let buffer = u16arr.buffer;
+let b64_bytes = Base64.encode(bytes);
+let b64_buffer = Base64.encode(buffer);
+console.log(Array.from(Base64.decode(b64_bytes)));
+console.log(Array.from(Base64.decode(b64_buffer)));

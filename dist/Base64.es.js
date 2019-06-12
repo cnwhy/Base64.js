@@ -1,5 +1,5 @@
 /*!
- * @cnwhy/base64  v0.2.0
+ * @cnwhy/base64  v0.2.1
  * Homepage https://github.com/cnwhy/Base64.js#readme
  * License MIT
  */
@@ -169,6 +169,11 @@ function checkTable(table) {
     }
 }
 function createEncode(table, pad, strEncode) {
+    if (typeof table == 'function') {
+        strEncode = table;
+        table = undefined;
+        pad = undefined;
+    }
     const TABLE = getTable(table);
     const PAD = getPad(pad, TABLE);
     return function (u8arr) {
@@ -207,9 +212,20 @@ function createEncode(table, pad, strEncode) {
     };
 }
 function createDecode(table, pad, strDecode) {
+    if (typeof table == 'function') {
+        strDecode = table;
+        table = undefined;
+        pad = undefined;
+    }
     const TABLE = getTable(table);
     const PAD = getPad(pad, TABLE);
     const TABLE_JOIN = TABLE.join('');
+    let _strDecode, toString = typeof strDecode == 'function'
+        ? ((_strDecode = strDecode),
+            function () {
+                return _strDecode(this);
+            })
+        : null;
     const getV = function (char) {
         let index = TABLE_JOIN.indexOf(char);
         if (index == -1)
@@ -224,11 +240,6 @@ function createDecode(table, pad, strDecode) {
         }
         return pads;
     };
-    const toString = typeof strDecode == 'function'
-        ? function () {
-            return strDecode(this);
-        }
-        : null;
     return function (base64Str) {
         let length = base64Str.length;
         let indexMax = length - getPads(base64Str);

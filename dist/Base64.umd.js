@@ -5,7 +5,7 @@
 }(this, function (exports) { 'use strict';
 
     /*!
-     * @cnwhy/base64  v0.2.0
+     * @cnwhy/base64  v0.2.1
      * Homepage https://github.com/cnwhy/Base64.js#readme
      * License MIT
      */
@@ -196,6 +196,12 @@
     }
 
     function createEncode(table, pad, strEncode) {
+      if (typeof table == 'function') {
+        strEncode = table;
+        table = undefined;
+        pad = undefined;
+      }
+
       var TABLE = getTable(table);
       var PAD = getPad(pad, TABLE);
       return function (u8arr) {
@@ -238,9 +244,20 @@
     }
 
     function createDecode(table, pad, strDecode) {
+      if (typeof table == 'function') {
+        strDecode = table;
+        table = undefined;
+        pad = undefined;
+      }
+
       var TABLE = getTable(table);
       var PAD = getPad(pad, TABLE);
       var TABLE_JOIN = TABLE.join('');
+
+      var _strDecode,
+          toString = typeof strDecode == 'function' ? (_strDecode = strDecode, function () {
+        return _strDecode(this);
+      }) : null;
 
       var getV = function getV(_char2) {
         var index = TABLE_JOIN.indexOf(_char2);
@@ -259,9 +276,6 @@
         return pads;
       };
 
-      var toString = typeof strDecode == 'function' ? function () {
-        return strDecode(this);
-      } : null;
       return function (base64Str) {
         var length = base64Str.length;
         var indexMax = length - getPads(base64Str);
