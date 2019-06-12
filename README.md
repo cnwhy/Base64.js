@@ -1,5 +1,9 @@
-**为什么重复造轮子?**
+# Base64
+[![Build Status](https://travis-ci.org/cnwhy/Base64.js.svg?branch=master)](https://travis-ci.org/cnwhy/Base64.js)
+[![Coverage Status](https://coveralls.io/repos/github/cnwhy/Base64.js/badge.svg?branch=master)](https://coveralls.io/github/cnwhy/Base64.js?branch=master)  
+> **Base64** `编码`,`解码` 库;
 
+### 为什么重复造轮子?
 1. `btoa` , `atob` 只支持 `Latin1` 字符.
 2. 常用的的 Base64 编码库处理字符串时会**主动**修改错误(空)编码字符, 导致解码的数据与原数据不一至.  
    比如用 nodejs 中的 `Buffer`:
@@ -9,15 +13,13 @@
     var _s = Buffer.from(b64, 'base64').toString();
     console.log(s == _s); //false
     ```
-3. `Base64`编/解码本该与字符串无关, 但几乎所有 Base64 的`decode`方法都输出字符串,限制了使用场景.
-4. 可自定义生成自编/解码函数, 适应自定义 Base64 编码表,非`UTF-8`编码字符串的场景.
+3. `Base64`编/解码本该与字符串无关, 但几乎所有 Base64 的`decode`方法都输出字符串, 限制了使用场景.
+4. 可自定义生成自编/解码函数, 适应自定义 Base64 编码表,以及自定义编码字符串的场景.
 
 ### 本库方案
-
-对于字符串的转换用`UTF-8`编码, 但无视无效符(解码按同一规则), 保证 js 的字符([UCS-2](https://zh.wikipedia.org/wiki/UTF-16#UTF-16%E8%88%87UCS-2%E7%9A%84%E9%97%9C%E4%BF%82))串可以无损转换.
-`decode()` 单纯将`Base64`解析`Byte[]`; 但重写返回字节数组的`toString()`方法, 以`UTF-8`编码解析为字符串.
-
-本库还暴露 `createEncode`, `createDecode` 两个 API, 支持生成非标准的 Base64 方案, 可自定义(table, pad, encoding);
+默认对于字符串的转换用`UTF-8`编码, 但无视无效符(解码按同一规则), 保证 js 的字符([UCS-2](https://zh.wikipedia.org/wiki/UTF-16#UTF-16%E8%88%87UCS-2%E7%9A%84%E9%97%9C%E4%BF%82))串可以无损转换.
+`decode()` 单纯将`Base64`解析`Byte[]`; 但重写返回字节数组的`toString()`方法, 以`UTF-8`编码解析为字符串.  
+本库还暴露 `createEncode`, `createDecode` 两个 API, 支持生成非标准的 Base64 方案, 可自定义(`table`, `pad`, `encoding`);
 
 ### 适用场景
 
