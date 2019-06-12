@@ -26,12 +26,18 @@
 1. 二进制数据与 Base64 互转
 2. 字符串与 Base64 互转
 
-### Demo
+### 兼容性
 
+通用, 对于不支持`ArrayBuffer`的环境将会用`Array`代替`Uint8Array`.
+
+## 安装
+```
+npm i @cnwhy/base64
+```
+
+## 使用
 ```js
-// import * as Base64 from 'base64.js'
 const Base64 = require('base64.js');
-
 
 let str = 'Base64库\u{10400}\u{d800}';
 console.log(str);  // Base64库𐐀�
@@ -59,11 +65,7 @@ QmFzZTY05bqT8JCQgO+/vQ==
 false
 ```
 
-### 兼容性
-
-通用, 不支持`ArrayBuffer`的环境将会用`Array`代替`Uint8Array`.
-
-### API
+## API
 
 ```ts
 Base64 = {
