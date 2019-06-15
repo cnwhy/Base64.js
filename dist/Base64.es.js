@@ -1,5 +1,5 @@
 /*!
- * @cnwhy/base64  v0.2.1
+ * @cnwhy/base64  v0.2.2
  * Homepage https://github.com/cnwhy/Base64.js#readme
  * License MIT
  */
