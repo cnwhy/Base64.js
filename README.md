@@ -21,43 +21,65 @@ npm i @cnwhy/base64
 3. javascript 字符串无损转换 (因为这一点, 现有库几乎全军覆没), [具体例子](https://github.com/cnwhy/Base64.js/wiki/javascript%E5%AD%97%E7%AC%A6%E4%B8%B2%E6%97%A0%E6%8D%9F%E8%BD%AC%E6%8D%A2%E6%8E%A2%E8%AE%A8);
 6. 能应付异型`Base64`方案;
 
-
-
 ## 兼容性
 通用, 对于不支持`ArrayBuffer`的环境将会用`Array`代替`Uint8Array`.  
 > 什么! 你要兼容IE6?  
 > 也不是不行, 把 `dist/Base64.umd.js` 最后那句 'Object.defineProperty(exports, '__esModule', { value: true });' 删了就可以了.
 
-
-
 ## 使用
 ```js
-const Base64 = require('base64.js');
+const { encode, decode, createEncode, createDecode } = require('@cnwhy/base64');
 
-let str = 'Base64库\u{10400}\u{d800}';
-console.log(str);  // Base64库𐐀�
-
-console.log('==Base64.js==')
-let b64 = Base64.encode(str);
-let _str = Base64.decode(b64).toString();
+// 1. 字符串 
+let str = '中国𐄡美国';
+let b64 = encode(str);
 console.log(b64);
-console.log(str === _str) // true
+let _str = decode(b64).toString(); // 必须调用toString()方法还原为字符串.
+console.log('string:', str === _str);  // true
 
-console.log('==Buffer==')
-let bf_b64 = Buffer.from(str).toString('base64');
-let bf_str = Buffer.from(bf_b64,'base64').toString();
-console.log(bf_b64);
-console.log(str === bf_str); // false
+// 2. 字节数组
+// let buffer = fs.readFileSync('./test.js');
+let buffer = new Uint8Array([0,255,127,33,0,5]);
+let fb64 = encode(buffer); // encode支持 Buffer , Stirng, Array<number>
+let fu8arr = decode(fb64); // decode 返回Uint8Array对像
+console.log('buffer:', Array.from(buffer).join() == Array.from(fu8arr).join());
 
-//output
+// 3. 自定义 Base64 转换方法
+
+// 自定义码表与补位符
+const TABLE = 'xQh}s7*y~A|nkj4Bf%z1R,P+)mMS{(&EWCKegp6r!OX</LuY-l9^ZJ#cTU[vHda$'; 
+const PAD = '.'; 
+
+// 自定义字符串编码/解码方法
+const Utf16Encode = function(str) { //
+	let cods = str.split('').map(s => s.charCodeAt(0));
+	return new Uint8Array(new Uint16Array(cods).buffer);
+}
+const Utf16Decode = function(arr) {
+	let u16 = Array.from(new Uint16Array(arr.buffer));
+	return u16.map(c => String.fromCharCode(c)).join('');
+}
+
+//创建自定义转码函数
+const myEncode = createEncode(TABLE,PAD,Utf16Encode);
+const myDecode = createDecode(TABLE,PAD,Utf16Decode);
+
+console.log('\n自定义转码:');
+let myb64 = myEncode(str);
+console.log(myb64);
+let my_str = myDecode(myb64).toString(); // 调用toString() 会用 Utf16Decode 方法将字节数组转为字符串
+console.log('my:',str == my_str);
+
+//output:
 /*
-Base64库𐐀�
-==Base64.js==
-QmFzZTY05bqT8JCQgO2ggA==
-true
-==Buffer==
-QmFzZTY05bqT8JCQgO+/vQ==
-false
+5Lit5Zu98JCEoee+juWbvQ==
+string: true
+buffer: true
+
+自定义转码:
+nRvd,W})~(#4E$JP
+my: true
+*/
 ```
 > 更多使用例子可以参看[这篇](https://blog.whyoop.com/2019/06/03/new-base64/#demo);
 

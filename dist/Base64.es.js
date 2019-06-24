@@ -1,74 +1,66 @@
 /*!
- * @cnwhy/base64  v0.2.2
+ * @cnwhy/base64  v0.2.3
  * Homepage https://github.com/cnwhy/Base64.js#readme
  * License MIT
  */
 
 const isArray = Array.isArray ||
     function (obj) {
-        Object.prototype.toString.call(obj) == '[object Array]';
+        return Object.prototype.toString.call(obj) == '[object Array]';
     };
 const hasArrayBuffer = typeof ArrayBuffer === 'function';
-const MyArrayBuffer = hasArrayBuffer ? ArrayBuffer : function () { };
-const myUint8arrayClass = hasArrayBuffer ? Uint8Array : Array;
-const getUint8Array = hasArrayBuffer
-    ? function (arr) {
-        return new Uint8Array(arr);
-    }
-    : function (arr) {
-        return typeof arr === 'number' ? new Array(arr) : arr;
-    };
+const MyLikeUint8array = hasArrayBuffer ? Uint8Array : Array;
+const isUint8Array = function (obj) {
+    return hasArrayBuffer && obj instanceof Uint8Array;
+};
+const isArrayBuffer = function (obj) {
+    return hasArrayBuffer && obj instanceof ArrayBuffer;
+};
 
 const ERR_CODE = '\ufffd';
-function u2utf8(codePoint) {
-    if (codePoint < 0x80)
-        return [codePoint];
-    let n = 11;
-    while (codePoint >= Math.pow(2, n)) {
-        n += 5;
-    }
-    let length = Math.ceil(n / 6);
-    let u8 = new Array(length);
-    let i = 0;
-    u8[0] = (0xff ^ (Math.pow(2, (8 - length)) - 1)) | (codePoint >> (6 * (length - 1)));
-    while (i < length - 1) {
-        u8[length - 1 - i] = 0x80 | ((codePoint >> (i * 6)) & 0x3f);
-        i++;
-    }
-    return u8;
-}
 function utf8Encode(str) {
-    let utf8 = [];
-    let codePoints = [];
-    for (let i = 0; i < str.length; i++) {
+    str = String(str);
+    let bf = [];
+    let length = str.length;
+    let add = function (codePoint) {
+        if (codePoint < 0x80) {
+            return bf.push(codePoint);
+        }
+        if (codePoint < 0x800) {
+            return bf.push(0xc0 | (codePoint >> 6), 0x80 | (codePoint & 0x3f));
+        }
+        if (codePoint < 0x10000) {
+            return bf.push(0xe0 | (codePoint >> 12), 0x80 | ((codePoint >> 6) & 0x3f), 0x80 | (codePoint & 0x3f));
+        }
+        if (codePoint < 0x200000) {
+            return bf.push(0xf0 | (codePoint >> 18), 0x80 | ((codePoint >> 12) & 0x3f), 0x80 | ((codePoint >> 6) & 0x3f), 0x80 | (codePoint & 0x3f));
+        }
+    };
+    for (let i = 0; i < length; i++) {
         let code = str.charCodeAt(i);
         let cod1;
         if (code < 0xd800 || code > 0xdfff) {
-            codePoints.push(code);
+            add(code);
         }
         else if (code < 0xdc00 && (cod1 = str.charCodeAt(i + 1)) >= 0xdc00 && cod1 < 0xe000) {
             i++;
-            codePoints.push(0x10000 + (((code & 0x3ff) << 10) | (cod1 & 0x3ff)));
+            add(0x10000 + (((code & 0x3ff) << 10) | (cod1 & 0x3ff)));
         }
         else {
-            codePoints.push(code);
+            add(code);
         }
     }
-    for (let i = 0; i < codePoints.length; i++) {
-        let v = codePoints[i];
-        utf8.push.apply(utf8, u2utf8(v));
-    }
-    return getUint8Array(utf8);
+    return bf;
 }
 function utf8Decode(buffer) {
     let u8;
     let str = '';
     let index = 0;
-    if (buffer instanceof myUint8arrayClass) {
+    if (isArray(buffer) || isUint8Array(buffer)) {
         u8 = buffer;
     }
-    else if (buffer instanceof MyArrayBuffer || isArray(buffer)) {
-        u8 = getUint8Array(buffer);
+    else if (isArrayBuffer(buffer)) {
+        u8 = new Uint8Array(buffer);
     }
     else {
         return String(buffer);
@@ -176,37 +168,44 @@ function createEncode(table, pad, strEncode) {
     }
     const TABLE = getTable(table);
     const PAD = getPad(pad, TABLE);
-    return function (u8arr) {
+    return function (input) {
         let _u8arr;
-        if (u8arr instanceof myUint8arrayClass) {
-            _u8arr = u8arr;
+        if (isArray(input) || isUint8Array(input)) {
+            _u8arr = input;
         }
-        else if (u8arr instanceof MyArrayBuffer || isArray(u8arr)) {
-            _u8arr = getUint8Array(u8arr);
+        else if (isArrayBuffer(input)) {
+            _u8arr = new Uint8Array(input);
         }
         else if (typeof strEncode == 'function') {
-            _u8arr = strEncode(String(u8arr));
+            _u8arr = strEncode(String(input));
         }
         else {
-            throw TypeError('"strEncode" is not function');
+            throw TypeError(`Input type is not supported, "strEncode" is not function`);
         }
-        let bitLength = Math.ceil((_u8arr.length * 8) / 6);
-        let str64Length = Math.ceil(_u8arr.length / 3) * 4;
-        let codes = new Array(str64Length);
-        let index = 0;
-        for (let i = 0; i < _u8arr.length;) {
-            let a0 = _u8arr[i++];
-            let a1 = _u8arr[i++];
-            let a2 = _u8arr[i++];
-            codes[index++] = a0 >> 2;
-            codes[index++] = ((a0 << 4) | (a1 >> 4)) & 0x3f;
-            codes[index++] = ((a1 << 2) | (a2 >> 6)) & 0x3f;
-            codes[index++] = a2 & 0x3f;
+        var base64 = '';
+        var _l = _u8arr.length % 3;
+        var padLength = _l ? _l === 2 ? 1 : 2 : 0;
+        var loopLength = _u8arr.length - _l;
+        var a0, a1, a2, i = 0;
+        while (i < loopLength) {
+            a0 = _u8arr[i++];
+            a1 = _u8arr[i++];
+            a2 = _u8arr[i++];
+            base64 =
+                base64 +
+                    TABLE[a0 >> 2] +
+                    TABLE[((a0 << 4) | (a1 >> 4)) & 0x3f] +
+                    TABLE[((a1 << 2) | (a2 >> 6)) & 0x3f] +
+                    TABLE[a2 & 0x3f];
         }
-        let base64 = '';
-        for (let i = 0; i < codes.length; i++) {
-            const code = codes[i];
-            base64 += i > bitLength - 1 ? PAD : TABLE[code];
+        if (padLength) {
+            a0 = _u8arr[i++];
+            a1 = _u8arr[i++] || 0;
+            base64 =
+                base64 +
+                    TABLE[a0 >> 2] +
+                    TABLE[((a0 << 4) | (a1 >> 4)) & 0x3f] +
+                    (padLength === 2 ? PAD + PAD : TABLE[(a1 << 2) & 0x3f] + PAD);
         }
         return base64;
     };
@@ -246,7 +245,7 @@ function createDecode(table, pad, strDecode) {
         let mc4 = indexMax % 4;
         if (mc4 === 1)
             throw new TypeError('The parameter is not a base64 string!');
-        let buffer = new myUint8arrayClass(Math.floor((indexMax * 6) / 8));
+        let buffer = new MyLikeUint8array(Math.floor((indexMax * 6) / 8));
         let index = 0;
         let i = 0;
         const next = function () {
@@ -271,8 +270,8 @@ function createDecode(table, pad, strDecode) {
 }
 
 const BASE64_URL_TABLE = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
-const encode = createEncode(BASE64_TABLE, PAD, utf8Encode);
-const decode = createDecode(BASE64_TABLE, PAD, utf8Decode);
+const encode = createEncode(utf8Encode);
+const decode = createDecode(utf8Decode);
 const encodeURL = createEncode(BASE64_URL_TABLE, PAD, utf8Encode);
 const decodeURL = createDecode(BASE64_URL_TABLE, PAD, utf8Decode);
 

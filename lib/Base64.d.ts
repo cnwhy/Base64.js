@@ -5,4 +5,4 @@ declare const encode: (input: any) => string;
 declare const decode: (base64str: string) => number[] | Uint8Array;
 declare const encodeURL: (input: any) => string;
 declare const decodeURL: (base64str: string) => number[] | Uint8Array;
-export { createEncode, createDecode, BASE64_TABLE, BASE64_URL_TABLE, PAD, utf8Decode, utf8Encode, encode, decode, encodeURL, decodeURL };
+export { BASE64_TABLE, BASE64_URL_TABLE, PAD, utf8Encode, utf8Decode, createEncode, createDecode, encode, decode, encodeURL, decodeURL };

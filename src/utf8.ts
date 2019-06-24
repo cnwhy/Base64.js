@@ -9,6 +9,7 @@ type LikeUint8Array = number[] | Uint8Array;
  * @returns
  */
 function utf8Encode(str: string): LikeUint8Array {
+	str = String(str);
 	let bf: number[] = [];
 	let length = str.length;
 	let add = function(codePoint: number) {
