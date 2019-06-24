@@ -3,37 +3,32 @@
 [![Coverage Status](https://coveralls.io/repos/github/cnwhy/Base64.js/badge.svg?branch=master)](https://coveralls.io/github/cnwhy/Base64.js?branch=master)  
 > **Base64** `编码`,`解码` 库;
 
-### 为什么重复造轮子?
-1. `btoa` , `atob` 只支持 `Latin1` 字符.
-2. 常用的的 Base64 编码库处理字符串时会**主动**修改错误(空)编码字符, 导致解码的数据与原数据不一至.  
-   比如用 nodejs 中的 `Buffer`:
-    ```js
-    var s = '\ud800';
-    var b64 = Buffer.from(s).toString('base64');
-    var _s = Buffer.from(b64, 'base64').toString();
-    console.log(s == _s); //false
-    ```
-3. `Base64`编/解码本该与字符串无关, 但几乎所有 Base64 的`decode`方法都输出字符串, 限制了使用场景.
-4. 可自定义生成自编/解码函数, 适应自定义 Base64 编码表,以及自定义编码字符串的场景.
+## 适用场景
 
-### 本库方案
-默认对于字符串的转换用`UTF-8`编码, 但无视无效符(解码按同一规则), 保证 js 的字符([UCS-2](https://zh.wikipedia.org/wiki/UTF-16#UTF-16%E8%88%87UCS-2%E7%9A%84%E9%97%9C%E4%BF%82))串可以无损转换.
-`decode()` 单纯将`Base64`解析`Byte[]`; 但重写返回字节数组的`toString()`方法, 以`UTF-8`编码解析为字符串.  
-本库还暴露 `createEncode`, `createDecode` 两个 API, 支持生成非标准的 Base64 方案, 可自定义(`table`, `pad`, `encoding`);
+- 二进制数据与 Base64 互转
+- 字符串与 Base64 互转
 
-### 适用场景
-
-1. 二进制数据与 Base64 互转
-2. 字符串与 Base64 互转
-
-### 兼容性
-
-通用, 对于不支持`ArrayBuffer`的环境将会用`Array`代替`Uint8Array`.
-
-## 安装
+## install
 ```
 npm i @cnwhy/base64
 ```
+
+## 为何重复造轮子?
+1. 需要单纯的Base64的库,而且能在浏览器上使用; (利用node的 `Buffer` 对像的方法出局)
+2. 支持字符串; (`btoa` , `atob` 只支持 [Latin1](https://zh.wikipedia.org/wiki/ISO/IEC_8859-1));
+4. `Base64`编/解码本该与字符串无关, 但现有库几乎只支持字符串;
+5. 能用上`Tree-shaking`, 项目一般只用需要(`encode` 或 `decode`), 我可不想copy代码;
+3. javascript 字符串无损转换 (因为这一点, 现有库几乎全军覆没), [具体例子](https://github.com/cnwhy/Base64.js/wiki/javascript%E5%AD%97%E7%AC%A6%E4%B8%B2%E6%97%A0%E6%8D%9F%E8%BD%AC%E6%8D%A2%E6%8E%A2%E8%AE%A8);
+6. 能应付异型`Base64`方案;
+
+
+
+## 兼容性
+通用, 对于不支持`ArrayBuffer`的环境将会用`Array`代替`Uint8Array`.  
+> 什么! 你要兼容IE6?  
+> 也不是不行, 把 `dist/Base64.umd.js` 最后那句 'Object.defineProperty(exports, '__esModule', { value: true });' 删了就可以了.
+
+
 
 ## 使用
 ```js
@@ -64,6 +59,7 @@ true
 QmFzZTY05bqT8JCQgO+/vQ==
 false
 ```
+> 更多使用例子可以参看[这篇](https://blog.whyoop.com/2019/06/03/new-base64/#demo);
 
 ## API
 
@@ -91,3 +87,6 @@ Base64 = {
 	createDecode(table?: string[] | string, pad?: string, strDecode?: Function): (base64str: string) => Uint8Array | number[];
 }
 ```
+
+## 参考资料
+[https://tools.ietf.org/html/rfc4648](https://tools.ietf.org/html/rfc4648);

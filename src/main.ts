@@ -1,4 +1,4 @@
-import { isArray, MyArrayBuffer, myUint8arrayClass, getUint8Array } from './poliyfill';
+import {isArray, MyLikeUint8array , isUint8Array, isArrayBuffer } from './poliyfill';
 const BASE64_TABLE = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 const PAD = '=';
 
@@ -72,40 +72,45 @@ function createEncode(
 	}
 	const TABLE = getTable(table);
 	const PAD = getPad(pad, TABLE);
-	return function(u8arr: ArrayBuffer | Uint8Array | number[] | string): string {
+	return function(input: ArrayBuffer | Uint8Array | number[] | string): string {
 		let _u8arr;
-		if (u8arr instanceof myUint8arrayClass) {
-			_u8arr = u8arr;
-		} else if (u8arr instanceof MyArrayBuffer || isArray(u8arr)) {
-			_u8arr = getUint8Array(u8arr);
+		if (isArray(input) || isUint8Array(input)) {
+			_u8arr = input;
+		} else if (isArrayBuffer(input)) {
+			_u8arr = new Uint8Array(input);
 		} else if (typeof strEncode == 'function') {
-			_u8arr = strEncode(String(u8arr));
+			// 其它都当成 string 处理
+			_u8arr = strEncode(String(input));
 		} else {
 			// 未初始化 strEncode 函数则不支持string类型
-			throw TypeError('"strEncode" is not function');
+			throw TypeError(`Input type is not supported, "strEncode" is not function`);
 		}
-		let bitLength = Math.ceil((_u8arr.length * 8) / 6);
-		let str64Length = Math.ceil(_u8arr.length / 3) * 4;
-		let codes = new Array(str64Length);
-		let index = 0;
-		for (let i = 0; i < _u8arr.length; ) {
-			let a0 = _u8arr[i++];
-			let a1 = _u8arr[i++];
-			let a2 = _u8arr[i++];
-			codes[index++] = a0 >> 2;
-			codes[index++] = ((a0 << 4) | (a1 >> 4)) & 0x3f;
-			codes[index++] = ((a1 << 2) | (a2 >> 6)) & 0x3f;
-			codes[index++] = a2 & 0x3f;
+		var base64 = '';
+		var _l = _u8arr.length % 3;
+		var padLength = _l ? _l === 2 ? 1 : 2 : 0;
+		var loopLength = _u8arr.length - _l;
+		var a0, a1, a2, i = 0;
+		while (i < loopLength) {
+			a0 = _u8arr[i++];
+			a1 = _u8arr[i++];
+			a2 = _u8arr[i++];
+			base64 =
+				base64 +
+				TABLE[a0 >> 2] +
+				TABLE[((a0 << 4) | (a1 >> 4)) & 0x3f] +
+				TABLE[((a1 << 2) | (a2 >> 6)) & 0x3f] +
+				TABLE[a2 & 0x3f];
 		}
-		let base64 = '';
-		for (let i = 0; i < codes.length; i++) {
-			const code = codes[i];
-			base64 += i > bitLength - 1 ? PAD : TABLE[code];
+		if (padLength) {
+			a0 = _u8arr[i++];
+			a1 = _u8arr[i++] || 0;
+			base64 =
+				base64 +
+				TABLE[a0 >> 2] +
+				TABLE[((a0 << 4) | (a1 >> 4)) & 0x3f] +
+				(padLength === 2 ? PAD + PAD : TABLE[(a1 << 2) & 0x3f] + PAD);
 		}
 		return base64;
-		// return codes.reduce((d, code, i) => {
-		// 	return (d += i > bitLength - 1 ? pad : table[code]);
-		// }, '');
 	};
 }
 
@@ -171,7 +176,7 @@ function createDecode(
 		let indexMax = length - getPads(base64Str);
 		let mc4 = indexMax % 4;
 		if (mc4 === 1) throw new TypeError('The parameter is not a base64 string!');
-		let buffer = new myUint8arrayClass(Math.floor((indexMax * 6) / 8));
+		let buffer = new MyLikeUint8array(Math.floor((indexMax * 6) / 8));
 		let index = 0;
 		let i = 0;
 		const next = function() {

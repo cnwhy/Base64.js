@@ -1,24 +1,6 @@
-import { isArray, MyArrayBuffer, myUint8arrayClass, getUint8Array } from './poliyfill';
+import {isArray, isArrayBuffer, isUint8Array} from './poliyfill';
 const ERR_CODE = '\ufffd';
-
-function u2utf8(codePoint: number): number[] {
-	// 未暴露的方法, 内部调用无需判断;
-	// if (codePoint < 0 || codePoint > 0x7fffffff) throw new SyntaxError('Undefined Unicode code-point');
-	if (codePoint < 0x80) return [codePoint];
-	let n = 11;
-	while (codePoint >= 2 ** n) {
-		n += 5;
-	}
-	let length = Math.ceil(n / 6);
-	let u8 = new Array(length);
-	let i = 0;
-	u8[0] = (0xff ^ (2 ** (8 - length) - 1)) | (codePoint >> (6 * (length - 1)));
-	while (i < length - 1) {
-		u8[length - 1 - i] = 0x80 | ((codePoint >> (i * 6)) & 0x3f);
-		i++;
-	}
-	return u8;
-}
+type LikeUint8Array = number[] | Uint8Array;
 
 /**
  * 字符串utf8编码
@@ -26,30 +8,66 @@ function u2utf8(codePoint: number): number[] {
  * @param {string} str
  * @returns
  */
-function utf8Encode(str: string): Uint8Array {
-	let utf8: number[] = [];
-	let codePoints: number[] = [];
-	//将字符串(ucs2)转为Unicode
-	for (let i = 0; i < str.length; i++) {
+function utf8Encode(str: string): LikeUint8Array {
+	let bf: number[] = [];
+	let length = str.length;
+	let add = function(codePoint: number) {
+		if (codePoint < 0x80) {
+			return bf.push(codePoint);
+		}
+		if (codePoint < 0x800) {
+			return bf.push(0xc0 | (codePoint >> 6), 0x80 | (codePoint & 0x3f));
+		}
+		if (codePoint < 0x10000) {
+			return bf.push(
+				0xe0 | (codePoint >> 12),
+				0x80 | ((codePoint >> 6) & 0x3f),
+				0x80 | (codePoint & 0x3f)
+			);
+		}
+		if (codePoint < 0x200000) {
+			return bf.push(
+				0xf0 | (codePoint >> 18),
+				0x80 | ((codePoint >> 12) & 0x3f),
+				0x80 | ((codePoint >> 6) & 0x3f),
+				0x80 | (codePoint & 0x3f)
+			);
+		}
+		// 肯定不会用到的 注释掉 减少打包代码量
+		// if (codePoint < 0x4000000) {
+		// 	return bf.push(
+		// 		0xf8 | (codePoint >> 24),
+		// 		0x80 | ((codePoint >> 18) & 0x3f),
+		// 		0x80 | ((codePoint >> 12) & 0x3f),
+		// 		0x80 | ((codePoint >> 6) & 0x3f),
+		// 		0x80 | (codePoint & 0x3f)
+		// 	);
+		// }
+		// return bf.push(
+		// 	0xfc | (codePoint >> 30),
+		// 	0x80 | ((codePoint >> 24) & 0x3f),
+		// 	0x80 | ((codePoint >> 18) & 0x3f),
+		// 	0x80 | ((codePoint >> 12) & 0x3f),
+		// 	0x80 | ((codePoint >> 6) & 0x3f),
+		// 	0x80 | (codePoint & 0x3f)
+		// );
+	};
+
+	for (let i = 0; i < length; i++) {
 		let code = str.charCodeAt(i);
 		let cod1;
 		if (code < 0xd800 || code > 0xdfff) {
-			codePoints.push(code);
+			add(code);
 		} else if (code < 0xdc00 && (cod1 = str.charCodeAt(i + 1)) >= 0xdc00 && cod1 < 0xe000) {
 			//四字节字符处理
 			i++;
-			codePoints.push(0x10000 + (((code & 0x3ff) << 10) | (cod1 & 0x3ff)));
+			add(0x10000 + (((code & 0x3ff) << 10) | (cod1 & 0x3ff)));
 		} else {
 			//不自行处理 不正常编码
-			codePoints.push(code);
+			add(code);
 		}
 	}
-	//UTF8编码Unicode
-	for (let i = 0; i < codePoints.length; i++) {
-		let v = codePoints[i];
-		utf8.push.apply(utf8, u2utf8(v));
-	}
-	return getUint8Array(utf8);
+	return bf;
 }
 
 /**
@@ -62,12 +80,10 @@ function utf8Decode(buffer: ArrayBuffer | Uint8Array | number[]): string {
 	let u8: Uint8Array | number[];
 	let str = '';
 	let index = 0;
-	if (buffer instanceof myUint8arrayClass) {
-		// Uint8Array & Buffer
+	if (isArray(buffer) || isUint8Array(buffer)) {
 		u8 = buffer;
-	} else if (buffer instanceof MyArrayBuffer || isArray(buffer)) {
-		// ArrayBuffer & number[]
-		u8 = getUint8Array(buffer);
+	} else if (isArrayBuffer(buffer)) {
+		u8 = new Uint8Array(buffer);
 	} else {
 		return String(buffer);
 	}
@@ -111,7 +127,7 @@ function utf8Decode(buffer: ArrayBuffer | Uint8Array | number[]): string {
 				return _i;
 			}
 		} catch (e) {
-			// 不正常的UTF8字节数据, 替换为 � 
+			// 不正常的UTF8字节数据, 替换为 �
 			// 注:此处与utf8Encode的不正常编码不同;
 			// UTF8编码时不考虑代理区, UTF16需要考虑代理区;
 			str += ERR_CODE;
@@ -124,7 +140,4 @@ function utf8Decode(buffer: ArrayBuffer | Uint8Array | number[]): string {
 	return str;
 }
 
-export{
-	utf8Encode,
-	utf8Decode
-}
+export { utf8Encode, utf8Decode };
