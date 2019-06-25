@@ -39,4 +39,9 @@ getSuite()
 			var k = STR.charAt(v);
 		});
 	})
+	.add('str[index]', function() {
+		getIndexs.forEach(v => {
+			var k = STR[v];
+		});
+	})
 	.run();

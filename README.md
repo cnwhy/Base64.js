@@ -22,13 +22,12 @@ npm i @cnwhy/base64
 6. 能应付异型`Base64`方案;
 
 ## 兼容性
-通用, 对于不支持`ArrayBuffer`的环境将会用`Array`代替`Uint8Array`.  
-> 什么! 你要兼容IE6?  
-> 也不是不行, 把 `dist/Base64.umd.js` 最后那句 'Object.defineProperty(exports, '__esModule', { value: true });' 删了就可以了.
+通用, 对于不支持`ArrayBuffer`的环境将会用`Array`代替`Uint8Array`.
 
 ## 使用
 ```js
 const { encode, decode, createEncode, createDecode } = require('@cnwhy/base64');
+// import { encode, decode, createEncode, createDecode } from '@cnwhy/base64';
 
 // 1. 字符串 
 let str = '中国𐄡美国';
@@ -51,7 +50,7 @@ const TABLE = 'xQh}s7*y~A|nkj4Bf%z1R,P+)mMS{(&EWCKegp6r!OX</LuY-l9^ZJ#cTU[vHda$'
 const PAD = '.'; 
 
 // 自定义字符串编码/解码方法
-const Utf16Encode = function(str) { //
+const Utf16Encode = function(str) {
 	let cods = str.split('').map(s => s.charCodeAt(0));
 	return new Uint8Array(new Uint16Array(cods).buffer);
 }
