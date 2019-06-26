@@ -5,7 +5,7 @@
 }(this, function (exports) { 'use strict';
 
     /*!
-     * @cnwhy/base64  v0.2.3
+     * @cnwhy/base64  v0.2.4
      * Homepage https://github.com/cnwhy/Base64.js#readme
      * License MIT
      */
@@ -79,59 +79,61 @@
         return String(buffer);
       }
 
-      function setChar(i) {
-        var _i = i;
-        var c0 = u8[_i++];
-
-        try {
-          if (c0 < 0x80) {
-            str += String.fromCharCode(c0);
-            return _i;
-          } else if (c0 < 0xc2 || c0 > 0xfd) {
-            throw 'code err';
-          } else {
-            var mk = 0x80;
-            var w = 6;
-            var cs = [];
-            var code = 0;
-
-            while (c0 >= (mk | Math.pow(2, w))) {
-              var cn = u8[_i++];
-              if (cn & 0xc0 ^ 0x80) throw 'code err';
-              cs.push(cn);
-              mk = mk | Math.pow(2, w);
-              w--;
-            }
-
-            cs = cs.reverse();
-
-            for (var k = 0; k < cs.length; k++) {
-              var _c = cs[k] & 0x3f;
-
-              code |= _c << k * 6;
-            }
-
-            code |= (c0 & Math.pow(2, w) - 1) << cs.length * 6;
-
-            if (code > 0xffff) {
-              var _code = code - 0x10000;
-
-              str += String.fromCharCode(0xd800 | _code >> 10);
-              str += String.fromCharCode(0xdc00 | _code & 0x3ff);
-            } else {
-              str += String.fromCharCode(code & 0xffff);
-            }
-
-            return _i;
-          }
-        } catch (e) {
-          str += ERR_CODE;
-          return i + 1;
-        }
-      }
-
       while (index < u8.length) {
-        index = setChar(index);
+        var c0 = u8[index++];
+
+        if (c0 < 0x80) {
+          str += String.fromCharCode(c0);
+        } else if (c0 < 0xc2 || c0 > 0xfd) {
+          str += ERR_CODE;
+          continue;
+        } else {
+          var _i = index;
+          var code = 0;
+          var n = 0;
+
+          if (c0 < 0xe0) {
+            code |= (c0 & 31) << 6;
+            n = 1;
+          } else if (c0 < 0xf0) {
+            n = 2;
+            code |= (c0 & 15) << 12;
+          } else if (c0 < 0xf8) {
+            n = 3;
+            code |= (c0 & 7) << 18;
+          } else if (c0 < 0xfc) {
+            n = 4;
+            code |= (c0 & 3) << 24;
+          } else {
+            n = 5;
+            code |= (c0 & 1) << 30;
+          }
+
+          while (n--) {
+            var c = u8[_i++];
+
+            if (c >> 6 != 2) {
+              code = -1;
+              break;
+            }
+
+            code |= (c & 0x3f) << n * 6;
+          }
+
+          if (code > 0xffff) {
+            var _code = code - 0x10000;
+
+            str += String.fromCharCode(0xd800 | _code >> 10);
+            str += String.fromCharCode(0xdc00 | _code & 0x3ff);
+          } else if (code > 0) {
+            str += String.fromCharCode(code);
+          } else {
+            str += ERR_CODE;
+            continue;
+          }
+
+          index = _i;
+        }
       }
 
       return str;
