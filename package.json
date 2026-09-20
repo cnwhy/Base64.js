@@ -1,6 +1,6 @@
 {
   "name": "@cnwhy/base64",
-  "version": "0.2.7",
+  "version": "0.2.8",
   "description": "Base64 library, lossless transcoding.",
   "main": "dist/Base64.umd.js",
   "module": "dist/Base64.es.js",
@@ -12,8 +12,7 @@
     "build": "npm run compile",
     "test": "ava test/index.js",
     "test-cov": "nyc npm test --fail-fast",
-    "verify": "npm run compile && npm test",
-    "prepack": "npm run verify"
+    "verify": "npm run compile && npm test"
   },
   "keywords": [
     "base64",

@@ -1,4 +1,4 @@
-name: Publish to npmjs.com
+name: Publish packages
 
 on:
   push:
@@ -7,14 +7,10 @@ on:
   workflow_dispatch:
 
 jobs:
-  publish:
+  build:
     runs-on: ubuntu-latest
-    concurrency:
-      group: publish-npmjs
-      cancel-in-progress: false
     permissions:
       contents: read
-      id-token: write
 
     steps:
       - name: Checkout
@@ -23,11 +19,11 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "24"
-          registry-url: "https://registry.npmjs.org"
+          node-version: "20"
+          cache: npm
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Verify package version
         if: startsWith(github.ref, 'refs/tags/v')
@@ -36,5 +32,63 @@ jobs:
           package_version="$(node -p "require('./package.json').version")"
           test "$tag_version" = "$package_version"
 
+      - name: Build and test
+        run: npm run verify
+
+  publish-npm:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: release
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          registry-url: https://registry.npmjs.org
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build package
+        run: npm run build --if-present
+
       - name: Publish to npmjs.com
-        run: npm publish --provenance --access public --registry=https://registry.npmjs.org
+        run: npm publish --provenance --access public
+
+  publish-github:
+    needs: publish-npm
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          registry-url: https://npm.pkg.github.com
+          scope: ${{ github.repository_owner }}
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build package
+        run: npm run build --if-present
+
+      - name: Publish to GitHub Packages
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
