@@ -38,10 +38,13 @@ jobs:
           package_version="$(node -p "require('./package.json').version")"
           test "$tag_version" = "$package_version"
 
+      - name: Configure GitHub Packages authentication
+        run: npm config set //npm.pkg.github.com/:_authToken "$NODE_AUTH_TOKEN"
+        env:
+          NODE_AUTH_TOKEN: ${{ github.token }}
+
       - name: Publish to GitHub Packages
         run: npm publish --access public --registry=https://npm.pkg.github.com
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Publish to npmjs.com
         run: npm publish --provenance --access public --registry=https://registry.npmjs.org
