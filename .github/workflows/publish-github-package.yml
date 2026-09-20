@@ -1,4 +1,4 @@
-name: Publish to GitHub Packages
+name: Publish to npmjs.com
 
 on:
   push:
@@ -10,11 +10,10 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     concurrency:
-      group: publish-github-package
+      group: publish-npmjs
       cancel-in-progress: false
     permissions:
       contents: read
-      packages: write
       id-token: write
 
     steps:
@@ -25,8 +24,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "24"
-          registry-url: "https://npm.pkg.github.com"
-          scope: "@cnwhy"
+          registry-url: "https://registry.npmjs.org"
 
       - name: Install dependencies
         run: npm install
@@ -37,29 +35,6 @@ jobs:
           tag_version="${GITHUB_REF_NAME#v}"
           package_version="$(node -p "require('./package.json').version")"
           test "$tag_version" = "$package_version"
-
-      - name: Configure GitHub Packages authentication
-        run: npm config set //npm.pkg.github.com/:_authToken "$NODE_AUTH_TOKEN"
-        env:
-          NODE_AUTH_TOKEN: ${{ github.token }}
-
-      - name: Publish to GitHub Packages
-        run: |
-          publish_log="$(mktemp)"
-          if npm publish --access public --registry=https://npm.pkg.github.com 2>&1 | tee "$publish_log"; then
-            echo "Published ${GITHUB_REF_NAME#v} to GitHub Packages"
-          elif grep -q "previously published versions" "$publish_log"; then
-            echo "GitHub Packages already contains ${GITHUB_REF_NAME#v}; skipping publish"
-          else
-            cat "$publish_log"
-            exit 1
-          fi
-
-      - name: Setup npmjs.com registry
-        uses: actions/setup-node@v4
-        with:
-          node-version: "24"
-          registry-url: "https://registry.npmjs.org"
 
       - name: Publish to npmjs.com
         run: npm publish --provenance --access public --registry=https://registry.npmjs.org
