@@ -51,6 +51,12 @@ jobs:
             npm publish --access public --registry=https://npm.pkg.github.com
           fi
 
+      - name: Setup npmjs.com registry
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          registry-url: "https://registry.npmjs.org"
+
       - name: Publish to npmjs.com
         run: |
           if npm view "@cnwhy/base64@${GITHUB_REF_NAME#v}" --registry=https://registry.npmjs.org version >/dev/null 2>&1; then
