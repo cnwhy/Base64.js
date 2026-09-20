@@ -1,6 +1,6 @@
 {
   "name": "@cnwhy/base64",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "description": "Base64 library, lossless transcoding.",
   "main": "dist/Base64.umd.js",
   "module": "dist/Base64.es.js",
@@ -9,9 +9,11 @@
     "clean": "rimraf dist/* lib/*",
     "precompile": "npm run clean",
     "compile": "tsc && rollup -c",
+    "build": "npm run compile",
     "test": "ava test/index.js",
     "test-cov": "nyc npm test --fail-fast",
-    "prepack": "npm run compile && npm run test-cov"
+    "verify": "npm run compile && npm test",
+    "prepack": "npm run verify"
   },
   "keywords": [
     "base64",
@@ -20,10 +22,7 @@
     "btoa"
   ],
   "files": [
-    "*.ts",
-    "*.js",
-    "*.json",
-    "src",
+    "README.md",
     "lib",
     "dist"
   ],
@@ -44,7 +43,7 @@
     "rollup-plugin-uglify": "^6.0.2",
     "ts-node": "^8.1.0",
     "tslib": "^1.10.0",
-    "typescript": "^3.4.4"
+    "typescript": "^5.4.5"
   },
   "directories": {
     "test": "test"

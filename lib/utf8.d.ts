@@ -1,4 +1,4 @@
-declare type LikeUint8Array = number[] | Uint8Array;
+type LikeUint8Array = number[] | Uint8Array;
 /**
  * 字符串utf8编码
  *
