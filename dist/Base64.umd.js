@@ -5,7 +5,7 @@
 }(this, (function (exports) { 'use strict';
 
     /*!
-     * @cnwhy/base64  v0.2.8
+     * @cnwhy/base64  v1.0.0-beta.0
      * Homepage https://github.com/cnwhy/Base64.js#readme
      * License MIT
      */

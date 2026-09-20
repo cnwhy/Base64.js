@@ -6,11 +6,12 @@ on:
       - "v*"
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
 
     steps:
       - name: Checkout
@@ -23,7 +24,7 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Verify package version
         if: startsWith(github.ref, 'refs/tags/v')
@@ -35,6 +36,19 @@ jobs:
       - name: Build and test
         run: npm run verify
 
+      - name: Pack tarball
+        run: |
+          mkdir -p dist-artifact
+          npm pack --pack-destination dist-artifact
+          echo "TARBALL=$(ls dist-artifact/*.tgz)" >> "$GITHUB_ENV"
+
+      - name: Upload tarball
+        uses: actions/upload-artifact@v4
+        with:
+          name: package
+          path: dist-artifact/*.tgz
+          retention-days: 1
+
   publish-npm:
     needs: build
     runs-on: ubuntu-latest
@@ -43,51 +57,55 @@ jobs:
       contents: read
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "24"
-          cache: npm
           registry-url: https://registry.npmjs.org
 
-      - name: Install dependencies
-        run: npm install
-
-      - name: Build package
-        run: npm run build --if-present
+      - name: Download tarball
+        uses: actions/download-artifact@v4
+        with:
+          name: package
+          path: .
 
       - name: Publish to npmjs.com
-        run: npm publish --provenance --access public
+        run: |
+          publish_tag="latest"
+          if [[ "$GITHUB_REF_NAME" == *-* ]]; then
+            publish_tag="${GITHUB_REF_NAME#*-}"
+            publish_tag="${publish_tag%%.*}"
+          fi
+          npm publish ./*.tgz --provenance --access public --tag "$publish_tag"
 
   publish-github:
-    needs: publish-npm
+    needs: build
     runs-on: ubuntu-latest
     permissions:
       packages: write
       contents: read
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - name: Download tarball
+        uses: actions/download-artifact@v4
+        with:
+          name: package
+          path: .
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "24"
-          cache: npm
           registry-url: https://npm.pkg.github.com
           scope: ${{ github.repository_owner }}
 
-      - name: Install dependencies
-        run: npm install
-
-      - name: Build package
-        run: npm run build --if-present
-
       - name: Publish to GitHub Packages
-        run: npm publish --access public
+        run: |
+          publish_tag="latest"
+          if [[ "$GITHUB_REF_NAME" == *-* ]]; then
+            publish_tag="${GITHUB_REF_NAME#*-}"
+            publish_tag="${publish_tag%%.*}"
+          fi
+          npm publish ./*.tgz --access public --tag "$publish_tag"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
