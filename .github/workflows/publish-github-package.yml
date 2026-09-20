@@ -38,7 +38,6 @@ jobs:
   publish-npm:
     needs: build
     runs-on: ubuntu-latest
-    environment: release
     permissions:
       id-token: write
       contents: read
