@@ -44,7 +44,17 @@ jobs:
           NODE_AUTH_TOKEN: ${{ github.token }}
 
       - name: Publish to GitHub Packages
-        run: npm publish --access public --registry=https://npm.pkg.github.com
+        run: |
+          if npm view "@cnwhy/base64@${GITHUB_REF_NAME#v}" --registry=https://npm.pkg.github.com version >/dev/null 2>&1; then
+            echo "GitHub Packages already contains ${GITHUB_REF_NAME#v}; skipping publish"
+          else
+            npm publish --access public --registry=https://npm.pkg.github.com
+          fi
 
       - name: Publish to npmjs.com
-        run: npm publish --provenance --access public --registry=https://registry.npmjs.org
+        run: |
+          if npm view "@cnwhy/base64@${GITHUB_REF_NAME#v}" --registry=https://registry.npmjs.org version >/dev/null 2>&1; then
+            echo "npmjs.com already contains ${GITHUB_REF_NAME#v}; skipping publish"
+          else
+            npm publish --provenance --access public --registry=https://registry.npmjs.org
+          fi
