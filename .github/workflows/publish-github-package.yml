@@ -45,10 +45,14 @@ jobs:
 
       - name: Publish to GitHub Packages
         run: |
-          if npm view "@cnwhy/base64@${GITHUB_REF_NAME#v}" --registry=https://npm.pkg.github.com version >/dev/null 2>&1; then
+          publish_log="$(mktemp)"
+          if npm publish --access public --registry=https://npm.pkg.github.com 2>&1 | tee "$publish_log"; then
+            echo "Published ${GITHUB_REF_NAME#v} to GitHub Packages"
+          elif grep -q "previously published versions" "$publish_log"; then
             echo "GitHub Packages already contains ${GITHUB_REF_NAME#v}; skipping publish"
           else
-            npm publish --access public --registry=https://npm.pkg.github.com
+            cat "$publish_log"
+            exit 1
           fi
 
       - name: Setup npmjs.com registry
