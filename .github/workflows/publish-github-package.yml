@@ -9,6 +9,9 @@ on:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    concurrency:
+      group: publish-github-package
+      cancel-in-progress: false
     permissions:
       contents: read
       packages: write
