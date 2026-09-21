@@ -1,5 +1,5 @@
 // import Base64 from './Base64';
-const Base64 = require('../lib/Base64');
+const Base64 = require('../dist/Base64.umd.js');
 const GBK = require('gbk.js');
 
 let str = 'Base64库\u{10400}\u{d800}';

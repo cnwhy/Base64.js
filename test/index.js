@@ -1,8 +1,7 @@
 // @ts-nocheck
 import test from 'ava';
-import * as Base64 from '../src/Base64.ts';
-import * as GBK from 'gbk.js';
-import { split } from 'ts-node';
+import * as Base64 from '../dist/Base64.es.mjs';
+import GBK from 'gbk.js';
 
 //正常字符
 let strs = [

@@ -8,7 +8,7 @@
 - 二进制数据与 Base64 互转
 - 字符串与 Base64 互转
 
-## install
+## 安装
 ```
 npm i @cnwhy/base64
 ```
@@ -16,18 +16,29 @@ npm i @cnwhy/base64
 ## 为何重复造轮子?
 1. 需要单纯的Base64的库,而且能在浏览器上使用; (利用node的 `Buffer` 对像的方法出局)
 2. 支持字符串; (`btoa` , `atob` 只支持 [Latin1](https://zh.wikipedia.org/wiki/ISO/IEC_8859-1));
-4. `Base64`编/解码本该与字符串无关, 但现有库几乎只支持字符串;
-5. 能用上`Tree-shaking`, 项目一般只用需要(`encode` 或 `decode`), 我可不想copy代码;
 3. javascript 字符串无损转换 (因为这一点, 现有库几乎全军覆没), [具体例子](https://github.com/cnwhy/Base64.js/wiki/javascript%E5%AD%97%E7%AC%A6%E4%B8%B2%E6%97%A0%E6%8D%9F%E8%BD%AC%E6%8D%A2%E6%8E%A2%E8%AE%A8);
-6. 能应付异型`Base64`方案;
+4. `Base64` 编/解码本该与字符串无关, 但现有库几乎只支持字符串;
+5. 能用上 `Tree-shaking`, 项目一般只用需要的(`encode` 或 `decode`), 我可不想 copy 代码;
+6. 能应付异型 `Base64` 方案;
 
 ## 兼容性
-通用, 对于不支持`ArrayBuffer`的环境将会用`Array`代替`Uint8Array`.
+通用。对于不支持 `ArrayBuffer` 的环境，将使用普通 `Array` 代替 `Uint8Array`。
+
+## 模块
+
+同时支持 CommonJS 和 ESM：
+
+```js
+const { encode, decode } = require('@cnwhy/base64');
+```
+
+```js
+import { encode, decode } from '@cnwhy/base64';
+```
 
 ## 使用
 ```js
 const { encode, decode, createEncode, createDecode } = require('@cnwhy/base64');
-// import { encode, decode, createEncode, createDecode } from '@cnwhy/base64';
 
 // 1. 字符串 
 let str = '中国𐄡美国';
@@ -39,8 +50,8 @@ console.log('string:', str === _str);  // true
 // 2. 字节数组
 // let buffer = fs.readFileSync('./test.js');
 let buffer = new Uint8Array([0,255,127,33,0,5]);
-let fb64 = encode(buffer); // encode支持 Buffer , Stirng, Array<number>
-let fu8arr = decode(fb64); // decode 返回Uint8Array对像
+let fb64 = encode(buffer); // encode 支持 Buffer、字符串、ArrayBuffer、Uint8Array 和 number[]
+let fu8arr = decode(fb64); // decode 返回 Uint8Array 或 number[]
 console.log('buffer:', Array.from(buffer).join() == Array.from(fu8arr).join());
 
 // 3. 自定义 Base64 转换方法
@@ -80,33 +91,47 @@ nRvd,W})~(#4E$JP
 my: true
 */
 ```
-> 更多使用例子可以参看[这篇](https://blog.whyoop.com/2019/06/03/new-base64/#demo);
 
 ## API
 
 ```ts
-Base64 = {
-	BASE64_TABLE: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-	BASE64_URL_TABLE: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
-	PAD: "=";
-	// UTF8 编码 解码; 可做为 strEncode strDecode 参数;
-	utf8Encode(str:string):Uint8Array|number[];
-	utf8Decode(utf8arr:Uint8Array|number[]):string;
+const BASE64_TABLE: string;
+const BASE64_URL_TABLE: string;
+const PAD: string;
 
-	//Base64 编码 解码
-	encode(input:string|ArrayBuffer|Uint8Array|number[]):string;
-	decode(base64str: string) => number[]|Uint8Array;
+function utf8Encode(str: string): Uint8Array | number[];
+function utf8Decode(input: ArrayBuffer | Uint8Array | number[]): string;
 
-	//适用于URL的Base64 编码 解码( "_" "-" 替换 "/" "+");
-	encodeURL(input:string|ArrayBuffer|Uint8Array|number[]):string;
-	decodeURL(base64str: string) => number[]|Uint8Array;
+function encode(input: string | ArrayBuffer | Uint8Array | number[]): string;
+function decode(base64str: string): Uint8Array | number[];
+function encodeURL(input: string | ArrayBuffer | Uint8Array | number[]): string;
+function decodeURL(base64str: string): Uint8Array | number[];
 
-	//创建自定义Base64 encode , decode 函数
-	createEncode(strEncode: Function): (input: any) => string;
-	createEncode(table?: string[] | string, pad?: string, strEncode?: Function): (input: any) => string;
-	createDecode(strDecode: Function): (base64str: string) => Uint8Array | number[];
-	createDecode(table?: string[] | string, pad?: string, strDecode?: Function): (base64str: string) => Uint8Array | number[];
-}
+function createEncode(strEncode: Function): (input: any) => string;
+function createEncode(
+  table?: string[] | string,
+  pad?: string,
+  strEncode?: Function
+): (input: any) => string;
+function createDecode(strDecode: Function): (base64str: string) => Uint8Array | number[];
+function createDecode(
+  table?: string[] | string,
+  pad?: string,
+  strDecode?: Function
+): (base64str: string) => Uint8Array | number[];
+```
+
+其中 `encode` 和 `encodeURL` 接受字符串、`ArrayBuffer`、`Uint8Array`、`number[]` 以及 Node.js `Buffer`。`decode` 和 `decodeURL` 返回字节数组；使用字符串编码器创建的解码函数会重写返回值的 `toString()`，便于还原字符串。
+
+### URL-safe Base64
+
+`encodeURL` 和 `decodeURL` 使用 URL-safe 字符表，以 `-` 和 `_` 分别替换标准 Base64 中的 `+` 和 `/`：
+
+```js
+const { encodeURL, decodeURL } = require('@cnwhy/base64');
+
+const value = encodeURL('hello world');
+const text = decodeURL(value).toString();
 ```
 
 ## 参考资料

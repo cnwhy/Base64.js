@@ -1,4 +1,4 @@
-const { encode, decode, createEncode, createDecode } = require('../lib/Base64');
+const { encode, decode, createEncode, createDecode } = require('../dist/Base64.umd.js');
 // 1. 字符串 
 let str = '中国𐄡美国';
 let b64 = encode(str);

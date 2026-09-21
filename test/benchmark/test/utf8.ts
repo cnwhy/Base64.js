@@ -1,5 +1,5 @@
 import Benchmark from 'benchmark';
-import { encode, utf8Encode } from '../../../src/Base64';
+import { encode, utf8Encode } from '../../../src/main';
 import { TextDecoder, TextEncoder } from 'util';
 
 function getSuite() {

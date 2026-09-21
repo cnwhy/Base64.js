@@ -1,8 +1,6 @@
 import typescript from 'rollup-plugin-typescript';
 import babel from 'rollup-plugin-babel';
-import { uglify } from 'rollup-plugin-uglify';
 import { terser } from 'rollup-plugin-terser';
-// import es3 from 'rollup-plugin-es3'
 import pkg from './package.json';
 
 let banner = `/*!
@@ -14,18 +12,20 @@ let banner = `/*!
 
 let minOpts = {
 	output: {
-		preamble: banner
+		preamble: banner,
+		comments: false
 	}
 };
 
 export default [
 	{
-		input: './src/Base64.ts',
+		input: './src/main.ts',
 		plugins: [
 			typescript({
 				target: 'ES2015',
 				module: 'ES2015',
-				removeComments: true
+				removeComments: true,
+				sourceMap: true
 			})
 		],
 		output: [
@@ -33,7 +33,8 @@ export default [
 				file: pkg.module,
 				// file: outDir + 'Base64.es.js',
 				format: 'es',
-				banner: banner
+				banner: banner,
+				sourcemap: true
 			}
 			// {
 			// 	file: pkg.main,
@@ -56,24 +57,27 @@ export default [
 			{
 				file: pkg.main,
 				name: 'Base64',
-				format: 'umd'
+				format: 'umd',
+				sourcemap: true
 			}
 		]
 	},
 	{
-		input: './src/Base64.ts',
+		input: './src/main.ts',
 		plugins: [
 			typescript({
 				target: 'ES2015',
 				module: 'ES2015',
-				removeComments: true
+				removeComments: true,
+				sourceMap: true
 			}),
 			terser(minOpts)
 		],
 		output: [
 			{
-				file: pkg.module.replace(/\.js$/, '.min.js'),
+				file: pkg.module.replace(/\.mjs$/, '.min.mjs'),
 				format: 'es',
+				sourcemap: true
 			}
 		]
 	},
@@ -84,13 +88,14 @@ export default [
 				babelrc: false,
 				presets: [['@babel/env', { targets: 'ie 6' }]]
 			}),
-			uglify(minOpts)
+			terser(minOpts)
 		],
 		output: [
 			{
 				file: pkg.main.replace(/\.js$/, '.min.js'),
 				name: 'Base64',
-				format: 'umd'
+				format: 'umd',
+				sourcemap: true
 			}
 		]
 	}

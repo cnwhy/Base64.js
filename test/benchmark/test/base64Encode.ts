@@ -1,5 +1,5 @@
 import Benchmark from 'benchmark';
-import { encode } from '../../../src/Base64';
+import { encode } from '../../../src/main';
 function getSuite() {
 	return new Benchmark.Suite()
 		.on('cycle', function(event: any) {
