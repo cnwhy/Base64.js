@@ -1,6 +1,6 @@
 # Base64
-[![Build Status](https://travis-ci.org/cnwhy/Base64.js.svg?branch=master)](https://travis-ci.org/cnwhy/Base64.js)
-[![Coverage Status](https://coveralls.io/repos/github/cnwhy/Base64.js/badge.svg?branch=master)](https://coveralls.io/github/cnwhy/Base64.js?branch=master)  
+[![CI](https://github.com/cnwhy/Base64.js/actions/workflows/ci.yml/badge.svg)](https://github.com/cnwhy/Base64.js/actions/workflows/ci.yml)
+[![Coverage Status](https://coveralls.io/repos/github/cnwhy/Base64.js/badge.svg?branch=master&service=github)](https://coveralls.io/github/cnwhy/Base64.js?branch=master&service=github)  
 > **Base64** `编码`,`解码` 库;
 
 ## 适用场景
