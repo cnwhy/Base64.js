@@ -24,7 +24,7 @@
     "build": "npm run compile",
     "prepublishOnly": "npm run build",
     "test": "ava test/index.js",
-    "test-cov": "npm run compile && c8 --reporter=text --reporter=html ava test/index.js --fail-fast",
+    "test-cov": "npm run compile && c8 --reporter=text --reporter=html --reporter=lcov ava test/index.js --fail-fast",
     "verify": "npm run compile && npm test"
   },
   "keywords": [

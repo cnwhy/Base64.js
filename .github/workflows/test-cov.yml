@@ -34,4 +34,4 @@ jobs:
         with:
           carry-over-sources: true
           flag-name: npm run test-cov
-          path-to-upload: ./coverage
+          path-to-upload: ./coverage/lcov.info
